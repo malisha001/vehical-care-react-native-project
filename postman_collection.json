@@ -1,0 +1,611 @@
+{
+  "info": {
+    "_postman_id": "vsc-vehicle-service-center",
+    "name": "Vehicle Service Center API",
+    "description": "Complete API collection for the Vehicle Service Center backend. Set the `baseUrl` environment variable to `http://localhost:5000/api`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@vehicleservice.com\",\n  \"password\": \"Admin@123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleaning Services",
+      "item": [
+        {
+          "name": "List All Services",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/cleaning-services",
+              "host": ["{{baseUrl}}"],
+              "path": ["cleaning-services"]
+            }
+          }
+        },
+        {
+          "name": "Get Service by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/cleaning-services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["cleaning-services", ":id"],
+              "variable": [{ "key": "id", "value": "SERVICE_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Create Service (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cleaning-services",
+              "host": ["{{baseUrl}}"],
+              "path": ["cleaning-services"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Body Wash\",\n  \"description\": \"Full exterior wash with premium foam and hand dry\",\n  \"price\": 799,\n  \"duration\": 60\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Service (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cleaning-services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["cleaning-services", ":id"],
+              "variable": [{ "key": "id", "value": "SERVICE_ID_HERE" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 899,\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Service (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cleaning-services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["cleaning-services", ":id"],
+              "variable": [{ "key": "id", "value": "SERVICE_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modification Items",
+      "item": [
+        {
+          "name": "List Items (with filters)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/mod-items?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "category", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/mod-items/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Item by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/mod-items/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items", ":id"],
+              "variable": [{ "key": "id", "value": "ITEM_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Create Item (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mod-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carbon Fiber Spoiler\",\n  \"brand\": \"SpeedTech\",\n  \"category\": \"Exterior\",\n  \"description\": \"Lightweight carbon fiber rear spoiler compatible with most sedans\",\n  \"stockQty\": 15,\n  \"tags\": [\"spoiler\", \"carbon\", \"exterior\"],\n  \"images\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Item (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mod-items/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items", ":id"],
+              "variable": [{ "key": "id", "value": "ITEM_ID_HERE" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Stock (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mod-items/:id/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items", ":id", "stock"],
+              "variable": [{ "key": "id", "value": "ITEM_ID_HERE" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockQty\": 25\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Item (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mod-items/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["mod-items", ":id"],
+              "variable": [{ "key": "id", "value": "ITEM_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Repair Slots",
+      "item": [
+        {
+          "name": "Get Available Slots",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/repair-slots/available",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-slots", "available"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by specific date (YYYY-MM-DD)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Slots (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-slots",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-slots"]
+            }
+          }
+        },
+        {
+          "name": "Create Bulk Slots (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-slots/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-slots", "bulk"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dates\": [\"2025-01-20\", \"2025-01-21\"],\n  \"timeSlots\": [\"09:00-10:00\", \"10:00-11:00\", \"14:00-15:00\"],\n  \"maxBookings\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle Slot Availability (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-slots/:id/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-slots", ":id", "toggle"],
+              "variable": [{ "key": "id", "value": "SLOT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Slot (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-slots/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-slots", ":id"],
+              "variable": [{ "key": "id", "value": "SLOT_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Repair Bookings",
+      "item": [
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-bookings/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-bookings", "my"]
+            }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-bookings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": \"SLOT_ID_HERE\",\n  \"vehicleModel\": \"Honda City 2020\",\n  \"vehiclePlate\": \"MH 12 AB 1234\",\n  \"issueDescription\": \"Engine makes a strange noise when accelerating above 60 km/h\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List All Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "PENDING", "disabled": true },
+                { "key": "date", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Booking Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/repair-bookings/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["repair-bookings", ":id", "status"],
+              "variable": [{ "key": "id", "value": "BOOKING_ID_HERE" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"adminNotes\": \"Confirmed. Please arrive 10 minutes early.\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carrier Requests",
+      "item": [
+        {
+          "name": "Get My Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carrier-requests/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["carrier-requests", "my"]
+            }
+          }
+        },
+        {
+          "name": "Submit Carrier Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carrier-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["carrier-requests"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Kumar\",\n  \"mobile\": \"9876543210\",\n  \"address\": \"123, MG Road, Pune, Maharashtra 411001\",\n  \"coordinates\": { \"lat\": 18.5204, \"lng\": 73.8567 },\n  \"notes\": \"Near City Mall, gate number 2\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List All Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carrier-requests?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["carrier-requests"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "REQUESTED", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Request Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carrier-requests/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["carrier-requests", ":id", "status"],
+              "variable": [{ "key": "id", "value": "REQUEST_ID_HERE" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ASSIGNED\",\n  \"assignedDriver\": \"Ramesh Patil\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/health",
+              "raw": "http://localhost:5000/health"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

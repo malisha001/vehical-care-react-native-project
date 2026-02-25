@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Vehicle Service Center",
+    "slug": "vehicle-service-center",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1e3a8a"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Vehicle Service to use your location for carrier requests."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vehicleservice.app"
+    },
+    "android": {
+      "package": "com.vehicleservice.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:5000/api"
+    }
+  }
+}
