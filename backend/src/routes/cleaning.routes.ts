@@ -20,7 +20,40 @@ const router = Router();
  *     parameters:
  *       - in: query
  *         name: isActive
- *         schema: { type: boolean }
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *     responses:
+ *       200:
+ *         description: List of cleaning services
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Cleaning services fetched
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       price:
+ *                         type: number
+ *                       duration:
+ *                         type: string
+ *                       isActive:
+ *                         type: boolean
  */
 router.get("/", cleaningController.getAll);
 
@@ -31,6 +64,41 @@ router.get("/", cleaningController.getAll);
  *     tags: [Cleaning Services]
  *     summary: Get cleaning service by ID (public)
  *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Cleaning service details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     duration:
+ *                       type: string
+ *                     isActive:
+ *                       type: boolean
+ *       404:
+ *         description: Not found
  */
 router.get("/:id", cleaningController.getById);
 
@@ -40,6 +108,9 @@ router.get("/:id", cleaningController.getById);
  *   post:
  *     tags: [Cleaning Services]
  *     summary: Create cleaning service (ADMIN)
+ *     responses:
+ *       201:
+ *         description: Created successfully
  */
 router.post(
   "/",

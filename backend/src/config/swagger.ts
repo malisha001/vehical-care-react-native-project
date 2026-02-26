@@ -14,11 +14,9 @@ const options: swaggerJSDoc.Options = {
       },
     },
     servers: [
-      { url: "http://localhost:5000/api", description: "Development Server" },
-      {
-        url: "https://api.vehicleservice.com/api",
-        description: "Production Server",
-      },
+      ...(process.env.RENDER_EXTERNAL_URL
+        ? [{ url: `${process.env.RENDER_EXTERNAL_URL}/api`, description: "Production Server (Render)" }]
+        : [{ url: "http://localhost:5001/api", description: "Development Server" }]),
     ],
     components: {
       securitySchemes: {
@@ -49,7 +47,11 @@ const options: swaggerJSDoc.Options = {
     },
     security: [{ bearerAuth: [] }],
   },
-  apis: ["./src/routes/*.ts"],
+  apis: [
+    process.env.NODE_ENV === "production"
+      ? "./dist/routes/*.js"
+      : "./src/routes/*.ts",
+  ],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
