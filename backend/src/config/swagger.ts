@@ -15,8 +15,18 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       ...(process.env.RENDER_EXTERNAL_URL
-        ? [{ url: `${process.env.RENDER_EXTERNAL_URL}/api`, description: "Production Server (Render)" }]
-        : [{ url: "http://localhost:5001/api", description: "Development Server" }]),
+        ? [
+            {
+              url: `${process.env.RENDER_EXTERNAL_URL}/api`,
+              description: "Production Server (Render)",
+            },
+          ]
+        : [
+            {
+              url: "http://localhost:5001/api",
+              description: "Development Server",
+            },
+          ]),
     ],
     components: {
       securitySchemes: {
