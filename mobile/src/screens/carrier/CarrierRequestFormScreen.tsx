@@ -23,6 +23,7 @@ const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   mobile: z
     .string()
+    .trim()
     .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
   address: z.string().min(5, "Please enter a full address"),
   notes: z.string().optional(),
@@ -149,6 +150,7 @@ const CarrierRequestFormScreen: React.FC = () => {
             keyboardType={keyboardType}
             multiline={multiline}
             textAlignVertical={multiline ? "top" : "center"}
+            maxLength={name === "mobile" ? 10 : undefined}
           />
         )}
       />

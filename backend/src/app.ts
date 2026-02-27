@@ -30,6 +30,7 @@ app.use(helmet());
 const allowedOrigins = [
   env.CLIENT_ORIGIN,
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://localhost:3000",
   "exp://localhost:19000",
   "http://localhost:8081",
