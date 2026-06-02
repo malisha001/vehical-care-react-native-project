@@ -23,7 +23,6 @@ const CleaningServicesPage: React.FC = () => {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CleaningService | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["cleaning-services"],
@@ -37,14 +36,6 @@ const CleaningServicesPage: React.FC = () => {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: Partial<CleaningService>) => cleaningApi.create(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["cleaning-services"] });
-      closeModal();
-    },
   });
 
   const updateMutation = useMutation({
@@ -61,19 +52,6 @@ const CleaningServicesPage: React.FC = () => {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => cleaningApi.delete(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["cleaning-services"] });
-      setDeleteId(null);
-    },
-  });
-
-  const openCreate = () => {
-    setEditing(null);
-    reset({ name: "", description: "", isActive: true });
-    setModalOpen(true);
-  };
   const openEdit = (s: CleaningService) => {
     setEditing(s);
     reset({
@@ -97,7 +75,6 @@ const CleaningServicesPage: React.FC = () => {
       price: data.price === "" ? undefined : Number(data.price),
     };
     if (editing) updateMutation.mutate({ id: editing._id, data: payload });
-    else createMutation.mutate(payload);
   };
 
   const columns = [
@@ -132,20 +109,12 @@ const CleaningServicesPage: React.FC = () => {
       render: (_: unknown, row: unknown) => {
         const s = row as CleaningService;
         return (
-          <div className="flex gap-2">
-            <button
-              onClick={() => openEdit(s)}
-              className="btn-secondary text-xs px-3 py-1"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => setDeleteId(s._id)}
-              className="btn-danger text-xs px-3 py-1"
-            >
-              Delete
-            </button>
-          </div>
+          <button
+            onClick={() => openEdit(s)}
+            className="btn-secondary text-xs px-3 py-1"
+          >
+            Edit Duration
+          </button>
         );
       },
     },
@@ -155,15 +124,15 @@ const CleaningServicesPage: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cleaning Services</h1>
-        <button onClick={openCreate} className="btn-primary">
-          + Add Service
-        </button>
+        <p className="text-sm text-gray-500">
+          Fixed cleaning categories. Update duration, price, and availability here.
+        </p>
       </div>
 
       <div className="card p-0 overflow-hidden">
         <Table
           columns={columns as Parameters<typeof Table>[0]["columns"]}
-          data={(services || []) as Record<string, unknown>[]}
+          data={services || []}
           loading={isLoading}
         />
       </div>
@@ -172,7 +141,7 @@ const CleaningServicesPage: React.FC = () => {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editing ? "Edit Cleaning Service" : "Add Cleaning Service"}
+        title="Edit Cleaning Service"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
@@ -237,7 +206,7 @@ const CleaningServicesPage: React.FC = () => {
               disabled={isSubmitting}
               className="btn-primary flex-1"
             >
-              {isSubmitting ? "Saving..." : editing ? "Update" : "Create"}
+              {isSubmitting ? "Saving..." : "Update"}
             </button>
             <button
               type="button"
@@ -248,33 +217,6 @@ const CleaningServicesPage: React.FC = () => {
             </button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Confirmation */}
-      <Modal
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        title="Confirm Delete"
-        size="sm"
-      >
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to delete this cleaning service?
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={() => deleteMutation.mutate(deleteId!)}
-            className="btn-danger flex-1"
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
-          </button>
-          <button
-            onClick={() => setDeleteId(null)}
-            className="btn-secondary flex-1"
-          >
-            Cancel
-          </button>
-        </div>
       </Modal>
     </div>
   );

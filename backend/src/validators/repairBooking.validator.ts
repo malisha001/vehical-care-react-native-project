@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 export const createRepairBookingSchema = z.object({
-  slotId: z.string().min(1, "Slot ID is required"),
+  customerName: z.string().min(2, "Name is required").max(100),
+  phone: z.string().min(7, "Phone number is required").max(20),
+  requestedDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Request date must be YYYY-MM-DD"),
   vehicleModel: z.string().max(100).optional(),
   vehiclePlate: z.string().max(20).optional(),
   issueDescription: z
@@ -11,8 +15,17 @@ export const createRepairBookingSchema = z.object({
 });
 
 export const updateBookingStatusSchema = z.object({
-  status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]),
+  status: z.enum(["REQUESTED", "PROPOSED", "ACCEPTED", "COMPLETED", "CANCELLED"]),
+  scheduledDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  estimatedDays: z.number().int().min(1).optional(),
   adminNotes: z.string().max(500).optional(),
+});
+
+export const userRepairDecisionSchema = z.object({
+  decision: z.enum(["ACCEPT", "CANCEL"]),
 });
 
 export type CreateRepairBookingInput = z.infer<
@@ -21,3 +34,4 @@ export type CreateRepairBookingInput = z.infer<
 export type UpdateBookingStatusInput = z.infer<
   typeof updateBookingStatusSchema
 >;
+export type UserRepairDecisionInput = z.infer<typeof userRepairDecisionSchema>;

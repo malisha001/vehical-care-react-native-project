@@ -1,16 +1,27 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+export type RepairBookingStatus =
+  | "REQUESTED"
+  | "PROPOSED"
+  | "ACCEPTED"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export interface IRepairBooking extends Document {
   userId: mongoose.Types.ObjectId;
+  customerName: string;
+  phone: string;
   vehicleModel?: string;
   vehiclePlate?: string;
-  slotId: mongoose.Types.ObjectId;
-  date: string;
-  timeSlot: string;
+  slotId?: mongoose.Types.ObjectId;
+  requestedDate: string;
+  scheduledDate?: string;
+  estimatedDays?: number;
+  date?: string;
+  timeSlot?: string;
   issueDescription: string;
-  status: BookingStatus;
+  status: RepairBookingStatus;
   adminNotes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -24,16 +35,21 @@ const RepairBookingSchema = new Schema<IRepairBooking>(
       required: true,
       index: true,
     },
+    customerName: { type: String, required: true, trim: true },
+    phone: { type: String, required: true, trim: true },
     vehicleModel: { type: String, trim: true },
     vehiclePlate: { type: String, trim: true, uppercase: true },
-    slotId: { type: Schema.Types.ObjectId, ref: "RepairSlot", required: true },
-    date: { type: String, required: true, index: true },
-    timeSlot: { type: String, required: true },
+    slotId: { type: Schema.Types.ObjectId, ref: "RepairSlot" },
+    requestedDate: { type: String, required: true, index: true },
+    scheduledDate: { type: String, index: true },
+    estimatedDays: { type: Number, min: 1 },
+    date: { type: String, index: true },
+    timeSlot: { type: String },
     issueDescription: { type: String, required: true, trim: true },
     status: {
       type: String,
-      enum: ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"],
-      default: "PENDING",
+      enum: ["REQUESTED", "PROPOSED", "ACCEPTED", "COMPLETED", "CANCELLED"],
+      default: "REQUESTED",
       index: true,
     },
     adminNotes: { type: String, trim: true },

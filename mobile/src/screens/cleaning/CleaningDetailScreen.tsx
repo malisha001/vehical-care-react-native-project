@@ -1,27 +1,58 @@
 import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { cleaningApi } from "../../api/endpoints";
-import { InfoRow, StatusPill } from "../../components/ui/MobileUI";
+import { cleaningApi, cleaningSlotApi } from "../../api/endpoints";
+import { CleaningSlot } from "../../types";
+import { EmptyState, InfoRow, StatusPill } from "../../components/ui/MobileUI";
 
 type Route = RouteProp<RootStackParamList, "CleaningDetail">;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const groupByDate = (
+  slots: CleaningSlot[],
+): { date: string; slots: CleaningSlot[] }[] => {
+  const map = new Map<string, CleaningSlot[]>();
+  slots.forEach((slot) => {
+    const list = map.get(slot.date) || [];
+    list.push(slot);
+    map.set(slot.date, list);
+  });
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, slots]) => ({
+      date,
+      slots: slots.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot)),
+    }));
+};
+
+const formatDate = (date: string) => {
+  const [year, month, day] = date.split("-");
+  const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+  return dateObj.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+};
 
 const CleaningDetailScreen: React.FC = () => {
   const route = useRoute<Route>();
+  const navigation = useNavigation<Nav>();
   const { id } = route.params;
 
   const { data: service, isLoading } = useQuery({
     queryKey: ["cleaning-service", id],
     queryFn: () => cleaningApi.getById(id).then((r) => r.data.data),
+  });
+
+  const { data: slots = [], isLoading: slotsLoading } = useQuery<CleaningSlot[]>({
+    queryKey: ["cleaning-slots-available", id],
+    queryFn: () => cleaningSlotApi.getAvailable(id).then((r) => r.data.data),
   });
 
   if (isLoading) {
@@ -40,6 +71,8 @@ const CleaningDetailScreen: React.FC = () => {
     );
   }
 
+  const grouped = groupByDate(slots.filter((slot) => slot.isAvailable));
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -47,7 +80,7 @@ const CleaningDetailScreen: React.FC = () => {
           <View className="h-16 w-16 rounded-3xl bg-primary-600 items-center justify-center mb-5">
             <Ionicons name="water-outline" size={34} color="#fff" />
           </View>
-          <StatusPill label="Service available" tone="green" icon="checkmark" />
+          <StatusPill label="Booking available" tone="green" icon="checkmark" />
           <Text className="text-white text-3xl font-bold mt-4">
             {service.name}
           </Text>
@@ -56,7 +89,7 @@ const CleaningDetailScreen: React.FC = () => {
           </Text>
         </View>
 
-        <View className="mx-4 -mt-10 bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
+        <View className="mx-4 -mt-10 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-5">
           <View className="flex-row gap-3">
             {service.price !== undefined ? (
               <View className="flex-1">
@@ -77,19 +110,82 @@ const CleaningDetailScreen: React.FC = () => {
               </View>
             ) : null}
           </View>
+        </View>
 
-          <View className="mt-5 bg-emerald-50 border border-emerald-100 rounded-3xl p-4">
-            <View className="flex-row items-center mb-2">
-              <Ionicons name="information-circle" size={18} color="#047857" />
-              <Text className="text-emerald-800 font-bold ml-2">
-                Walk-in service
-              </Text>
-            </View>
-            <Text className="text-emerald-700 text-sm leading-5">
-              Visit the service center to use this cleaning package. Advance
-              booking is not required for cleaning services.
-            </Text>
-          </View>
+        <View className="px-4 pb-6">
+          <Text className="text-gray-950 font-bold text-lg mb-3">
+            Available slots
+          </Text>
+
+          {slotsLoading ? (
+            <ActivityIndicator color="#2563eb" />
+          ) : grouped.length === 0 ? (
+            <EmptyState
+              icon="calendar-clear-outline"
+              title="No available slots"
+              message="There are no cleaning appointments open for this service right now."
+            />
+          ) : (
+            grouped.map((group) => (
+              <View key={group.date} className="mb-4">
+                <View className="flex-row items-center mb-3">
+                  <View className="h-10 w-10 rounded-2xl bg-blue-50 border border-blue-100 items-center justify-center mr-3">
+                    <Ionicons name="calendar-outline" size={19} color="#2563eb" />
+                  </View>
+                  <View>
+                    <Text className="text-gray-950 font-bold">
+                      {formatDate(group.date)}
+                    </Text>
+                    <Text className="text-gray-400 text-xs">
+                      {group.slots.length} slots available
+                    </Text>
+                  </View>
+                </View>
+
+                {group.slots.map((slot) => (
+                  <View
+                    key={slot._id}
+                    className="bg-white border border-gray-100 rounded-3xl p-4 mb-3 shadow-sm"
+                  >
+                    <View className="flex-row items-center justify-between mb-4">
+                      <View className="flex-row items-center flex-1 mr-3">
+                        <View className="h-11 w-11 rounded-2xl bg-gray-50 items-center justify-center mr-3">
+                          <Ionicons name="time-outline" size={22} color="#4b5563" />
+                        </View>
+                        <View>
+                          <Text className="text-gray-950 font-bold text-base">
+                            {slot.timeSlot}
+                          </Text>
+                          <Text className="text-gray-400 text-xs mt-0.5">
+                            {slot.currentBookings} of {slot.maxBookings} booked
+                          </Text>
+                        </View>
+                      </View>
+                      <StatusPill label="Available" tone="green" />
+                    </View>
+
+                    <TouchableOpacity
+                      className="bg-primary-600 rounded-2xl py-3 items-center"
+                      activeOpacity={0.85}
+                      onPress={() =>
+                        navigation.navigate("CleaningBookingForm", {
+                          serviceId: service._id,
+                          serviceName: service.name,
+                          slotId: slot._id,
+                          date: slot.date,
+                          timeSlot: slot.timeSlot,
+                        })
+                      }
+                    >
+                      <Text className="text-white font-bold text-sm">
+                        Book this slot
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

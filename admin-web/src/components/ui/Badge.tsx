@@ -25,6 +25,8 @@ export const statusBadge = (status: string): React.ReactNode => {
     COMPLETED: { color: "green" },
     CANCELLED: { color: "red" },
     REQUESTED: { color: "yellow" },
+    PROPOSED: { color: "blue" },
+    ACCEPTED: { color: "green" },
     ASSIGNED: { color: "blue" },
   };
   const cfg = map[status] || { color: "gray" };

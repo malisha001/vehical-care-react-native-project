@@ -1,161 +1,304 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
-  FlatList,
+  TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { RootStackParamList } from "../../navigation/AppNavigator";
-import { repairSlotApi } from "../../api/endpoints";
-import { RepairSlot } from "../../types";
-import { EmptyState, LoadingState, ScreenHero, StatusPill } from "../../components/ui/MobileUI";
+import { z } from "zod";
+import { repairBookingApi } from "../../api/endpoints";
+import { useAuthStore } from "../../store/authStore";
+import { ScreenHero } from "../../components/ui/MobileUI";
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+const schema = z.object({
+  customerName: z.string().min(2, "Please enter your name"),
+  phone: z.string().min(7, "Please enter a valid phone number").max(20),
+  requestedDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format"),
+  vehicleModel: z.string().max(100).optional(),
+  vehiclePlate: z.string().max(20).optional(),
+  issueDescription: z
+    .string()
+    .min(10, "Please describe the repair in at least 10 characters"),
+});
 
-const groupByDate = (
-  slots: RepairSlot[],
-): { date: string; slots: RepairSlot[] }[] => {
-  const map = new Map<string, RepairSlot[]>();
-  slots.forEach((slot) => {
-    const list = map.get(slot.date) || [];
-    list.push(slot);
-    map.set(slot.date, list);
-  });
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, slots]) => ({
-      date,
-      slots: slots.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot)),
-    }));
-};
+type FormData = z.infer<typeof schema>;
 
-const formatDate = (date: string) => {
-  const [year, month, day] = date.split("-");
-  const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-  return dateObj.toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-};
+const today = new Date().toISOString().split("T")[0];
 
 const RepairSlotsScreen: React.FC = () => {
-  const navigation = useNavigation<Nav>();
-  const [selectedDate] = useState<string>("");
+  const navigation = useNavigation<any>();
+  const user = useAuthStore((state) => state.user);
 
-  const { data: slots = [], isLoading } = useQuery<RepairSlot[]>({
-    queryKey: ["repair-slots-available", selectedDate],
-    queryFn: () =>
-      repairSlotApi
-        .getAvailable(selectedDate || undefined)
-        .then((r) => r.data.data),
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      customerName: user?.name || "",
+      phone: "",
+      requestedDate: today,
+      vehicleModel: "",
+      vehiclePlate: "",
+      issueDescription: "",
+    },
   });
 
-  const grouped = groupByDate(slots.filter((slot) => slot.isAvailable));
+  const mutation = useMutation({
+    mutationFn: (data: FormData) => repairBookingApi.create(data),
+    onSuccess: () => {
+      reset({
+        customerName: user?.name || "",
+        phone: "",
+        requestedDate: today,
+        vehicleModel: "",
+        vehiclePlate: "",
+        issueDescription: "",
+      });
+      Alert.alert(
+        "Request sent",
+        "Your repair request has been sent. The admin will review the date and send you an update.",
+        [{ text: "OK", onPress: () => navigation.navigate("MyBookings") }],
+      );
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        "Request failed",
+        error?.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
+    },
+  });
 
-  const handleBook = (slot: RepairSlot) => {
-    navigation.navigate("RepairBookingForm", {
-      slotId: slot._id,
-      date: slot.date,
-      timeSlot: slot.timeSlot,
-    });
+  const onSubmit = (data: FormData) => {
+    mutation.mutate(data);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <ScreenHero
-        eyebrow="Repair"
-        title="Repair Slots"
-        subtitle="Choose a time that works for you and tell us what needs attention."
-        icon="construct-outline"
-        accent="orange"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        <TouchableOpacity
-          className="bg-white/15 border border-white/20 rounded-2xl px-4 py-3 flex-row items-center justify-between"
-          onPress={() => navigation.navigate("MyBookings")}
-          activeOpacity={0.85}
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="reader-outline" size={19} color="#fff" />
-            <Text className="text-white font-semibold ml-2">My bookings</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#fff" />
-        </TouchableOpacity>
-      </ScreenHero>
-
-      {isLoading ? (
-        <LoadingState color="#f97316" />
-      ) : grouped.length === 0 ? (
-        <EmptyState
-          icon="calendar-clear-outline"
-          title="No available slots"
-          message="There are no repair appointments open right now. Please check back later."
+        <ScreenHero
+          eyebrow="Repair"
+          title="Repair Request"
+          subtitle="Tell us what needs attention. A mechanic will review and confirm the repair date."
+          icon="construct-outline"
           accent="orange"
-        />
-      ) : (
-        <FlatList
-          data={grouped}
-          keyExtractor={(item) => item.date}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
-          renderItem={({ item }) => (
-            <View className="px-4 mb-4">
-              <View className="flex-row items-center mb-3">
-                <View className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100 items-center justify-center mr-3">
-                  <Ionicons name="calendar-outline" size={19} color="#ea580c" />
-                </View>
-                <View>
-                  <Text className="text-gray-950 font-bold">
-                    {formatDate(item.date)}
-                  </Text>
-                  <Text className="text-gray-400 text-xs">
-                    {item.slots.length} slots available
-                  </Text>
-                </View>
-              </View>
-
-              {item.slots.map((slot) => (
-                <View
-                  key={slot._id}
-                  className="bg-white border border-gray-100 rounded-3xl p-4 mb-3 shadow-sm"
-                >
-                  <View className="flex-row items-center justify-between mb-4">
-                    <View className="flex-row items-center flex-1 mr-3">
-                      <View className="h-11 w-11 rounded-2xl bg-gray-50 items-center justify-center mr-3">
-                        <Ionicons name="time-outline" size={22} color="#4b5563" />
-                      </View>
-                      <View>
-                        <Text className="text-gray-950 font-bold text-base">
-                          {slot.timeSlot}
-                        </Text>
-                        <Text className="text-gray-400 text-xs mt-0.5">
-                          {slot.currentBookings} of {slot.maxBookings} booked
-                        </Text>
-                      </View>
-                    </View>
-                    <StatusPill label="Available" tone="green" />
-                  </View>
-
-                  <TouchableOpacity
-                    className="bg-orange-500 rounded-2xl py-3 items-center"
-                    onPress={() => handleBook(slot)}
-                    activeOpacity={0.85}
-                  >
-                    <Text className="text-white font-bold text-sm">
-                      Book this slot
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+        >
+          <TouchableOpacity
+            className="bg-white/15 border border-white/20 rounded-2xl px-4 py-3 flex-row items-center justify-between"
+            onPress={() => navigation.navigate("MyBookings")}
+            activeOpacity={0.85}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="notifications-outline" size={19} color="#fff" />
+              <Text className="text-white font-semibold ml-2">
+                Repair notifications
+              </Text>
             </View>
-          )}
-        />
-      )}
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        </ScreenHero>
+
+        <ScrollView
+          contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+            <Text className="text-gray-950 font-bold text-lg mb-4">
+              Request details
+            </Text>
+
+            <View className="mb-4">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Name <Text className="text-red-500">*</Text>
+              </Text>
+              <Controller
+                control={control}
+                name="customerName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 ${
+                      errors.customerName ? "border-red-400" : "border-gray-100"
+                    }`}
+                    placeholder="Your name"
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                )}
+              />
+              {errors.customerName ? (
+                <Text className="text-red-500 text-xs mt-1">
+                  {errors.customerName.message}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Phone number <Text className="text-red-500">*</Text>
+              </Text>
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 ${
+                      errors.phone ? "border-red-400" : "border-gray-100"
+                    }`}
+                    placeholder="e.g. 0771234567"
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="phone-pad"
+                  />
+                )}
+              />
+              {errors.phone ? (
+                <Text className="text-red-500 text-xs mt-1">
+                  {errors.phone.message}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Requested date <Text className="text-red-500">*</Text>
+              </Text>
+              <Controller
+                control={control}
+                name="requestedDate"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 ${
+                      errors.requestedDate ? "border-red-400" : "border-gray-100"
+                    }`}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                )}
+              />
+              {errors.requestedDate ? (
+                <Text className="text-red-500 text-xs mt-1">
+                  {errors.requestedDate.message}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Vehicle model
+              </Text>
+              <Controller
+                control={control}
+                name="vehicleModel"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900"
+                    placeholder="e.g. Toyota Aqua"
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                )}
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Vehicle plate
+              </Text>
+              <Controller
+                control={control}
+                name="vehiclePlate"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-gray-900"
+                    placeholder="e.g. WP ABC 1234"
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="characters"
+                  />
+                )}
+              />
+            </View>
+
+            <View className="mb-5">
+              <Text className="text-gray-700 font-semibold mb-2">
+                Description <Text className="text-red-500">*</Text>
+              </Text>
+              <Controller
+                control={control}
+                name="issueDescription"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 h-28 ${
+                      errors.issueDescription
+                        ? "border-red-400"
+                        : "border-gray-100"
+                    }`}
+                    placeholder="Describe the issue with your vehicle..."
+                    placeholderTextColor="#9ca3af"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                )}
+              />
+              {errors.issueDescription ? (
+                <Text className="text-red-500 text-xs mt-1">
+                  {errors.issueDescription.message}
+                </Text>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              className={`rounded-2xl py-4 items-center ${
+                mutation.isPending ? "bg-orange-400" : "bg-orange-500"
+              }`}
+              onPress={handleSubmit(onSubmit)}
+              disabled={mutation.isPending}
+              activeOpacity={0.85}
+            >
+              {mutation.isPending ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-base">
+                  Send request
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

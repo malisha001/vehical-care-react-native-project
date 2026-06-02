@@ -5,6 +5,8 @@ import AdminLayout from "./components/layout/AdminLayout";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CleaningServicesPage from "./pages/CleaningServicesPage";
+import CleaningSlotsPage from "./pages/CleaningSlotsPage";
+import CleaningBookingsPage from "./pages/CleaningBookingsPage";
 import ModificationItemsPage from "./pages/ModificationItemsPage";
 import RepairSlotsPage from "./pages/RepairSlotsPage";
 import RepairBookingsPage from "./pages/RepairBookingsPage";
@@ -36,6 +38,8 @@ const App: React.FC = () => {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="cleaning-services" element={<CleaningServicesPage />} />
+          <Route path="cleaning-slots" element={<CleaningSlotsPage />} />
+          <Route path="cleaning-bookings" element={<CleaningBookingsPage />} />
           <Route
             path="modification-items"
             element={<ModificationItemsPage />}

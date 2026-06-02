@@ -13,10 +13,10 @@ import RegisterScreen from "../screens/auth/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
 import CleaningListScreen from "../screens/cleaning/CleaningListScreen";
 import CleaningDetailScreen from "../screens/cleaning/CleaningDetailScreen";
+import CleaningBookingFormScreen from "../screens/cleaning/CleaningBookingFormScreen";
 import ModificationListScreen from "../screens/modification/ModificationListScreen";
 import ModificationDetailScreen from "../screens/modification/ModificationDetailScreen";
 import RepairSlotsScreen from "../screens/repair/RepairSlotsScreen";
-import RepairBookingFormScreen from "../screens/repair/RepairBookingFormScreen";
 import MyBookingsScreen from "../screens/repair/MyBookingsScreen";
 import CarrierRequestFormScreen from "../screens/carrier/CarrierRequestFormScreen";
 import MyCarrierRequestsScreen from "../screens/carrier/MyCarrierRequestsScreen";
@@ -27,8 +27,14 @@ export type RootStackParamList = {
   Register: undefined;
   Main: undefined;
   CleaningDetail: { id: string };
+  CleaningBookingForm: {
+    serviceId: string;
+    serviceName: string;
+    slotId: string;
+    date: string;
+    timeSlot: string;
+  };
   ModificationDetail: { id: string };
-  RepairBookingForm: { slotId: string; date: string; timeSlot: string };
   MyBookings: undefined;
   CarrierRequestForm: undefined;
   MyCarrierRequests: undefined;
@@ -135,21 +141,21 @@ const AppNavigator: React.FC = () => {
               }}
             />
             <Stack.Screen
-              name="ModificationDetail"
-              component={ModificationDetailScreen}
+              name="CleaningBookingForm"
+              component={CleaningBookingFormScreen}
               options={{
                 headerShown: true,
-                title: "Item Details",
+                title: "Book Cleaning Slot",
                 headerStyle: { backgroundColor: "#1e3a8a" },
                 headerTintColor: "#fff",
               }}
             />
             <Stack.Screen
-              name="RepairBookingForm"
-              component={RepairBookingFormScreen}
+              name="ModificationDetail"
+              component={ModificationDetailScreen}
               options={{
                 headerShown: true,
-                title: "Book Repair Slot",
+                title: "Item Details",
                 headerStyle: { backgroundColor: "#1e3a8a" },
                 headerTintColor: "#fff",
               }}

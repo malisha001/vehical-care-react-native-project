@@ -6,6 +6,7 @@ import { requireAdmin, requireUser } from "../middlewares/role.middleware";
 import {
   createRepairBookingSchema,
   updateBookingStatusSchema,
+  userRepairDecisionSchema,
 } from "../validators/repairBooking.validator";
 
 const router = Router();
@@ -25,6 +26,15 @@ router.get(
   authenticate,
   requireUser,
   repairBookingController.getMyBookings,
+);
+
+// User: accept or cancel admin proposed repair date
+router.patch(
+  "/:id/decision",
+  authenticate,
+  requireUser,
+  validate(userRepairDecisionSchema),
+  repairBookingController.respondToProposal,
 );
 
 // Admin: get all bookings

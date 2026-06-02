@@ -1,7 +1,9 @@
 import api from "./axios";
 import {
   AuthTokens,
+  CleaningBooking,
   CleaningService,
+  CleaningSlot,
   DashboardMetrics,
   ModificationItem,
   RepairBooking,
@@ -34,6 +36,36 @@ export const cleaningApi = {
   update: (id: string, data: Partial<CleaningService>) =>
     api.put<ApiResponse<CleaningService>>(`/cleaning-services/${id}`, data),
   delete: (id: string) => api.delete<ApiResponse>(`/cleaning-services/${id}`),
+};
+
+export const cleaningSlotApi = {
+  getAll: (params?: { serviceId?: string; date?: string }) =>
+    api.get<ApiResponse<CleaningSlot[]>>("/cleaning-slots", { params }),
+  createBulk: (data: {
+    serviceId: string;
+    startDate: string;
+    endDate: string;
+    timeSlots: string[];
+    maxBookings?: number;
+  }) => api.post<ApiResponse<CleaningSlot[]>>("/cleaning-slots/bulk", data),
+  update: (id: string, data: Partial<CleaningSlot>) =>
+    api.put<ApiResponse<CleaningSlot>>(`/cleaning-slots/${id}`, data),
+  delete: (id: string) => api.delete<ApiResponse>(`/cleaning-slots/${id}`),
+};
+
+export const cleaningBookingApi = {
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    date?: string;
+    serviceId?: string;
+  }) => api.get<ApiResponse<CleaningBooking[]>>("/cleaning-bookings", { params }),
+  updateStatus: (id: string, data: { status: string; adminNotes?: string }) =>
+    api.patch<ApiResponse<CleaningBooking>>(
+      `/cleaning-bookings/${id}/status`,
+      data,
+    ),
 };
 
 // Modification Items
@@ -81,7 +113,15 @@ export const repairBookingApi = {
     status?: string;
     date?: string;
   }) => api.get<ApiResponse<RepairBooking[]>>("/repair-bookings", { params }),
-  updateStatus: (id: string, data: { status: string; adminNotes?: string }) =>
+  updateStatus: (
+    id: string,
+    data: {
+      status: string;
+      scheduledDate?: string;
+      estimatedDays?: number;
+      adminNotes?: string;
+    },
+  ) =>
     api.patch<ApiResponse<RepairBooking>>(
       `/repair-bookings/${id}/status`,
       data,

@@ -153,7 +153,7 @@ const CarrierRequestsPage: React.FC = () => {
       <div className="card p-0 overflow-hidden">
         <Table
           columns={columns as Parameters<typeof Table>[0]["columns"]}
-          data={requests as Record<string, unknown>[]}
+          data={requests}
           loading={isLoading}
         />
       </div>

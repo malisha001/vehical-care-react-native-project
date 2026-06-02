@@ -38,7 +38,7 @@ const DashboardPage: React.FC = () => {
 
   const m: DashboardMetrics = data || {
     users: { total: 0 },
-    cleaning: { active: 0 },
+    cleaning: { active: 0, bookings: 0, pending: 0 },
     modification: { total: 0, available: 0 },
     repairs: { total: 0, pending: 0, confirmed: 0, completed: 0 },
     carrier: { total: 0, active: 0 },
@@ -77,6 +77,18 @@ const DashboardPage: React.FC = () => {
           color="border-cyan-500"
         />
         <MetricCard
+          label="Cleaning Bookings"
+          value={m.cleaning.bookings}
+          icon="CB"
+          color="border-cyan-500"
+        />
+        <MetricCard
+          label="Pending Cleaning"
+          value={m.cleaning.pending}
+          icon="PC"
+          color="border-orange-500"
+        />
+        <MetricCard
           label="Modification Items"
           value={m.modification.total}
           icon="🔧"
@@ -89,13 +101,13 @@ const DashboardPage: React.FC = () => {
           color="border-green-500"
         />
         <MetricCard
-          label="Total Repair Bookings"
+          label="Repair Requests"
           value={m.repairs.total}
           icon="🔩"
           color="border-yellow-500"
         />
         <MetricCard
-          label="Pending Bookings"
+          label="Requested Repairs"
           value={m.repairs.pending}
           icon="⏳"
           color="border-orange-500"

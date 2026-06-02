@@ -222,7 +222,7 @@ const ModificationItemsPage: React.FC = () => {
       <div className="card p-0 overflow-hidden">
         <Table
           columns={columns as Parameters<typeof Table>[0]["columns"]}
-          data={(data || []) as Record<string, unknown>[]}
+          data={data || []}
           loading={isLoading}
         />
       </div>

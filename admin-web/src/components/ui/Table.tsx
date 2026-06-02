@@ -13,7 +13,7 @@ interface TableProps<T> {
   emptyMessage?: string;
 }
 
-function Table<T extends Record<string, unknown>>({
+function Table<T extends object>({
   columns,
   data,
   loading,
@@ -61,8 +61,11 @@ function Table<T extends Record<string, unknown>>({
                     className="px-4 py-3 text-sm text-gray-700"
                   >
                     {col.render
-                      ? col.render(row[col.key as keyof T], row)
-                      : String(row[col.key as keyof T] ?? "-")}
+                      ? col.render((row as Record<string, unknown>)[String(col.key)], row)
+                      : String(
+                          (row as Record<string, unknown>)[String(col.key)] ??
+                            "-",
+                        )}
                   </td>
                 ))}
               </tr>

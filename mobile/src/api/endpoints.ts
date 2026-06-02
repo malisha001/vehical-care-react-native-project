@@ -2,7 +2,9 @@ import api from "./axios";
 import {
   ApiResponse,
   AuthTokens,
+  CleaningBooking,
   CleaningService,
+  CleaningSlot,
   ModificationItem,
   RepairSlot,
   RepairBooking,
@@ -33,6 +35,27 @@ export const cleaningApi = {
     api.get<ApiResponse<CleaningService>>(`/cleaning-services/${id}`),
 };
 
+export const cleaningSlotApi = {
+  getAvailable: (serviceId: string, date?: string) =>
+    api.get<ApiResponse<CleaningSlot[]>>("/cleaning-slots/available", {
+      params: { serviceId, ...(date ? { date } : {}) },
+    }),
+};
+
+export const cleaningBookingApi = {
+  create: (data: {
+    serviceId: string;
+    slotId: string;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    notes?: string;
+  }) => api.post<ApiResponse<CleaningBooking>>("/cleaning-bookings", data),
+  getMyBookings: (page = 1) =>
+    api.get<ApiResponse<CleaningBooking[]>>("/cleaning-bookings/my", {
+      params: { page, limit: 10 },
+    }),
+};
+
 export const modItemApi = {
   getAll: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<ModificationItem[]>>("/mod-items", {
@@ -54,7 +77,9 @@ export const repairSlotApi = {
 
 export const repairBookingApi = {
   create: (data: {
-    slotId: string;
+    customerName: string;
+    phone: string;
+    requestedDate: string;
     vehicleModel?: string;
     vehiclePlate?: string;
     issueDescription: string;
@@ -62,6 +87,10 @@ export const repairBookingApi = {
   getMyBookings: (page = 1) =>
     api.get<ApiResponse<RepairBooking[]>>("/repair-bookings/my", {
       params: { page, limit: 10 },
+    }),
+  respond: (id: string, decision: "ACCEPT" | "CANCEL") =>
+    api.patch<ApiResponse<RepairBooking>>(`/repair-bookings/${id}/decision`, {
+      decision,
     }),
 };
 

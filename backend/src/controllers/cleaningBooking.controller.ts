@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
-import * as repairBookingService from "../services/repairBooking.service";
-import { sendSuccess } from "../utils/apiResponse";
+import * as cleaningBookingService from "../services/cleaningBooking.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { sendSuccess } from "../utils/apiResponse";
 
 export const createBooking = async (
   req: AuthRequest,
@@ -9,11 +9,11 @@ export const createBooking = async (
   next: NextFunction,
 ) => {
   try {
-    const booking = await repairBookingService.createBooking(
+    const booking = await cleaningBookingService.createBooking(
       req.user!.userId,
       req.body,
     );
-    sendSuccess(res, "Repair booking created", booking, 201);
+    sendSuccess(res, "Cleaning booking created", booking, 201);
   } catch (err) {
     next(err);
   }
@@ -27,12 +27,12 @@ export const getMyBookings = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const result = await repairBookingService.getMyBookings(
+    const result = await cleaningBookingService.getMyBookings(
       req.user!.userId,
       page,
       limit,
     );
-    sendSuccess(res, "My bookings fetched", result.bookings, 200, {
+    sendSuccess(res, "My cleaning bookings fetched", result.bookings, 200, {
       page: result.page,
       limit: result.limit,
       total: result.total,
@@ -52,13 +52,15 @@ export const getAllBookings = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const status = req.query.status as string | undefined;
     const date = req.query.date as string | undefined;
-    const result = await repairBookingService.getAllBookings(
+    const serviceId = req.query.serviceId as string | undefined;
+    const result = await cleaningBookingService.getAllBookings(
       page,
       limit,
       status,
       date,
+      serviceId,
     );
-    sendSuccess(res, "All bookings fetched", result.bookings, 200, {
+    sendSuccess(res, "All cleaning bookings fetched", result.bookings, 200, {
       page: result.page,
       limit: result.limit,
       total: result.total,
@@ -74,28 +76,11 @@ export const updateBookingStatus = async (
   next: NextFunction,
 ) => {
   try {
-    const booking = await repairBookingService.updateBookingStatus(
+    const booking = await cleaningBookingService.updateBookingStatus(
       req.params.id,
       req.body,
     );
-    sendSuccess(res, "Booking status updated", booking);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const respondToProposal = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const booking = await repairBookingService.respondToProposal(
-      req.params.id,
-      req.user!.userId,
-      req.body,
-    );
-    sendSuccess(res, "Repair request updated", booking);
+    sendSuccess(res, "Cleaning booking status updated", booking);
   } catch (err) {
     next(err);
   }
@@ -108,11 +93,11 @@ export const getBookingById = async (
 ) => {
   try {
     const userId = req.user!.role === "ADMIN" ? undefined : req.user!.userId;
-    const booking = await repairBookingService.getBookingById(
+    const booking = await cleaningBookingService.getBookingById(
       req.params.id,
       userId,
     );
-    sendSuccess(res, "Booking fetched", booking);
+    sendSuccess(res, "Cleaning booking fetched", booking);
   } catch (err) {
     next(err);
   }

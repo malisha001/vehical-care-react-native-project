@@ -4,12 +4,13 @@ import { useAuthStore } from "../../store/authStore";
 import { authApi } from "../../api/endpoints";
 
 const navItems = [
-  { label: "Dashboard", path: "/dashboard", icon: "📊" },
-  { label: "Cleaning Services", path: "/cleaning-services", icon: "🧹" },
-  { label: "Modification Items", path: "/modification-items", icon: "🔧" },
-  { label: "Repair Slots", path: "/repair-slots", icon: "🗓️" },
-  { label: "Repair Bookings", path: "/repair-bookings", icon: "🚗" },
-  { label: "Carrier Requests", path: "/carrier-requests", icon: "🚛" },
+  { label: "Dashboard", path: "/dashboard", icon: "DB" },
+  { label: "Cleaning Services", path: "/cleaning-services", icon: "CS" },
+  { label: "Cleaning Slots", path: "/cleaning-slots", icon: "CL" },
+  { label: "Cleaning Bookings", path: "/cleaning-bookings", icon: "CB" },
+  { label: "Modification Items", path: "/modification-items", icon: "MI" },
+  { label: "Repair Requests", path: "/repair-bookings", icon: "RR" },
+  { label: "Carrier Requests", path: "/carrier-requests", icon: "CR" },
 ];
 
 const AdminLayout: React.FC = () => {
@@ -27,12 +28,9 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
       <aside className="w-64 bg-primary-900 text-white flex flex-col">
         <div className="p-6 border-b border-primary-700">
-          <h1 className="text-lg font-bold leading-tight">
-            🚗 Vehicle Service
-          </h1>
+          <h1 className="text-lg font-bold leading-tight">Vehicle Service</h1>
           <p className="text-xs text-primary-300 mt-1">Admin Dashboard</p>
         </div>
         <nav className="flex-1 overflow-y-auto py-4">
@@ -48,7 +46,7 @@ const AdminLayout: React.FC = () => {
                 }`
               }
             >
-              <span>{item.icon}</span>
+              <span className="w-6 text-xs font-bold">{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
@@ -59,12 +57,11 @@ const AdminLayout: React.FC = () => {
             onClick={handleLogout}
             className="w-full text-left text-xs text-red-300 hover:text-red-200 transition-colors"
           >
-            ← Logout
+            Logout
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
           <h2 className="text-sm font-semibold text-gray-600">

@@ -1,47 +1,51 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { repairBookingApi } from "../api/endpoints";
-import { RepairBooking, RepairBookingStatus } from "../types";
+import { cleaningApi, cleaningBookingApi } from "../api/endpoints";
+import { BookingStatus, CleaningBooking, CleaningService } from "../types";
 import Modal from "../components/ui/Modal";
 import Table from "../components/ui/Table";
 import { statusBadge } from "../components/ui/Badge";
 
-const STATUSES: RepairBookingStatus[] = [
-  "REQUESTED",
-  "PROPOSED",
-  "ACCEPTED",
+const STATUSES: BookingStatus[] = [
+  "PENDING",
+  "CONFIRMED",
   "COMPLETED",
   "CANCELLED",
 ];
 
-const RepairBookingsPage: React.FC = () => {
+const CleaningBookingsPage: React.FC = () => {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
   const [page, setPage] = useState(1);
   const [statusModal, setStatusModal] = useState<{
-    booking: RepairBooking;
-    status: RepairBookingStatus;
-    scheduledDate: string;
-    estimatedDays: number;
+    booking: CleaningBooking;
+    status: BookingStatus;
     notes: string;
   } | null>(null);
 
+  const { data: services = [] } = useQuery({
+    queryKey: ["cleaning-services"],
+    queryFn: () => cleaningApi.getAll().then((r) => r.data.data),
+  });
+
   const { data: res, isLoading } = useQuery({
-    queryKey: ["repair-bookings", page, statusFilter, dateFilter],
+    queryKey: ["cleaning-bookings", page, statusFilter, dateFilter, serviceFilter],
     queryFn: () =>
-      repairBookingApi
+      cleaningBookingApi
         .getAll({
           page,
           limit: 20,
           status: statusFilter || undefined,
           date: dateFilter || undefined,
+          serviceId: serviceFilter || undefined,
         })
         .then((r) => r.data),
   });
 
-  const bookings = (res?.data as RepairBooking[]) || [];
+  const bookings = (res?.data as CleaningBooking[]) || [];
   const meta = res?.meta;
 
   const updateMutation = useMutation({
@@ -50,18 +54,18 @@ const RepairBookingsPage: React.FC = () => {
       data,
     }: {
       id: string;
-      data: {
-        status: string;
-        scheduledDate?: string;
-        estimatedDays?: number;
-        adminNotes?: string;
-      };
-    }) => repairBookingApi.updateStatus(id, data),
+      data: { status: string; adminNotes?: string };
+    }) => cleaningBookingApi.updateStatus(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["repair-bookings"] });
+      qc.invalidateQueries({ queryKey: ["cleaning-bookings"] });
       setStatusModal(null);
     },
   });
+
+  const serviceName = (serviceId: CleaningBooking["serviceId"]) => {
+    if (typeof serviceId === "object") return serviceId.name;
+    return services.find((s: CleaningService) => s._id === serviceId)?.name || "-";
+  };
 
   const columns = [
     {
@@ -72,35 +76,28 @@ const RepairBookingsPage: React.FC = () => {
     {
       key: "userId",
       label: "User",
-      render: (v: unknown, row: unknown) => {
-        const booking = row as RepairBooking;
-        const account = typeof v === "object" ? (v as { name: string }).name : "";
-        return booking.customerName || account || "-";
-      },
+      render: (v: unknown) =>
+        typeof v === "object" ? (v as { name: string }).name : "-",
     },
-    { key: "phone", label: "Phone" },
+    {
+      key: "serviceId",
+      label: "Service",
+      render: (v: unknown) => serviceName(v as CleaningBooking["serviceId"]),
+    },
     {
       key: "vehiclePlate",
       label: "Vehicle",
       render: (v: unknown, row: unknown) =>
-        `${(row as RepairBooking).vehicleModel || ""} ${v || ""}`.trim() || "-",
+        `${(row as CleaningBooking).vehicleModel || ""} ${v || ""}`.trim() ||
+        "-",
     },
-    { key: "requestedDate", label: "Requested Date" },
+    { key: "date", label: "Slot Date" },
+    { key: "timeSlot", label: "Time Slot" },
     {
-      key: "scheduledDate",
-      label: "Scheduled Date",
-      render: (v: unknown, row: unknown) => {
-        const booking = row as RepairBooking;
-        return v
-          ? `${v}${booking.estimatedDays ? ` (${booking.estimatedDays} days)` : ""}`
-          : "-";
-      },
-    },
-    {
-      key: "issueDescription",
-      label: "Description",
+      key: "notes",
+      label: "Notes",
       render: (v: unknown) => (
-        <span className="line-clamp-1 max-w-xs">{v as string}</span>
+        <span className="line-clamp-1 max-w-xs">{(v as string) || "-"}</span>
       ),
     },
     {
@@ -112,24 +109,19 @@ const RepairBookingsPage: React.FC = () => {
       key: "_id",
       label: "Actions",
       render: (_: unknown, row: unknown) => {
-        const booking = row as RepairBooking;
+        const booking = row as CleaningBooking;
         return (
           <button
             onClick={() =>
               setStatusModal({
                 booking,
-                status:
-                  booking.status === "REQUESTED"
-                    ? "PROPOSED"
-                    : booking.status,
-                scheduledDate: booking.scheduledDate || booking.requestedDate,
-                estimatedDays: booking.estimatedDays || 1,
+                status: booking.status,
                 notes: booking.adminNotes || "",
               })
             }
             className="btn-secondary text-xs px-3 py-1"
           >
-            Review
+            Update
           </button>
         );
       },
@@ -138,7 +130,7 @@ const RepairBookingsPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">Repair Requests</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Cleaning Bookings</h1>
 
       <div className="flex gap-3 flex-wrap">
         <select
@@ -153,17 +145,30 @@ const RepairBookingsPage: React.FC = () => {
             </option>
           ))}
         </select>
+        <select
+          value={serviceFilter}
+          onChange={(e) => setServiceFilter(e.target.value)}
+          className="input max-w-xs"
+        >
+          <option value="">All Services</option>
+          {services.map((service: CleaningService) => (
+            <option key={service._id} value={service._id}>
+              {service.name}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
           className="input max-w-xs"
         />
-        {(statusFilter || dateFilter) && (
+        {(statusFilter || dateFilter || serviceFilter) && (
           <button
             onClick={() => {
               setStatusFilter("");
               setDateFilter("");
+              setServiceFilter("");
               setPage(1);
             }}
             className="btn-secondary"
@@ -209,21 +214,20 @@ const RepairBookingsPage: React.FC = () => {
       <Modal
         isOpen={!!statusModal}
         onClose={() => setStatusModal(null)}
-        title="Review Repair Request"
+        title="Update Cleaning Booking"
       >
         {statusModal && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
-              <p>
-                <strong>Requested date:</strong>{" "}
-                {statusModal.booking.requestedDate}
+            <div>
+              <p className="text-sm text-gray-500">
+                Service: {serviceName(statusModal.booking.serviceId)}
               </p>
-              <p className="mt-1">
-                <strong>Description:</strong>{" "}
-                {statusModal.booking.issueDescription}
-              </p>
+              {statusModal.booking.notes && (
+                <p className="text-sm text-gray-500">
+                  Notes: {statusModal.booking.notes}
+                </p>
+              )}
             </div>
-
             <div>
               <label className="label">Status</label>
               <select
@@ -231,7 +235,7 @@ const RepairBookingsPage: React.FC = () => {
                 onChange={(e) =>
                   setStatusModal((p) =>
                     p
-                      ? { ...p, status: e.target.value as RepairBookingStatus }
+                      ? { ...p, status: e.target.value as BookingStatus }
                       : null,
                   )
                 }
@@ -244,44 +248,8 @@ const RepairBookingsPage: React.FC = () => {
                 ))}
               </select>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">Scheduled Date</label>
-                <input
-                  type="date"
-                  value={statusModal.scheduledDate}
-                  onChange={(e) =>
-                    setStatusModal((p) =>
-                      p ? { ...p, scheduledDate: e.target.value } : null,
-                    )
-                  }
-                  className="input"
-                />
-              </div>
-              <div>
-                <label className="label">Repair Days</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={statusModal.estimatedDays}
-                  onChange={(e) =>
-                    setStatusModal((p) =>
-                      p
-                        ? {
-                            ...p,
-                            estimatedDays: parseInt(e.target.value) || 1,
-                          }
-                        : null,
-                    )
-                  }
-                  className="input"
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="label">Message to User</label>
+              <label className="label">Admin Notes (optional)</label>
               <textarea
                 value={statusModal.notes}
                 onChange={(e) =>
@@ -291,10 +259,9 @@ const RepairBookingsPage: React.FC = () => {
                 }
                 rows={3}
                 className="input"
-                placeholder="Explain the date change or repair duration..."
+                placeholder="Add notes for the user..."
               />
             </div>
-
             <div className="flex gap-3">
               <button
                 onClick={() =>
@@ -302,14 +269,6 @@ const RepairBookingsPage: React.FC = () => {
                     id: statusModal.booking._id,
                     data: {
                       status: statusModal.status,
-                      scheduledDate:
-                        statusModal.status === "CANCELLED"
-                          ? undefined
-                          : statusModal.scheduledDate,
-                      estimatedDays:
-                        statusModal.status === "CANCELLED"
-                          ? undefined
-                          : statusModal.estimatedDays,
                       adminNotes: statusModal.notes,
                     },
                   })
@@ -317,7 +276,7 @@ const RepairBookingsPage: React.FC = () => {
                 disabled={updateMutation.isPending}
                 className="btn-primary flex-1"
               >
-                {updateMutation.isPending ? "Sending..." : "Send Update"}
+                {updateMutation.isPending ? "Updating..." : "Update Status"}
               </button>
               <button
                 onClick={() => setStatusModal(null)}
@@ -333,4 +292,4 @@ const RepairBookingsPage: React.FC = () => {
   );
 };
 
-export default RepairBookingsPage;
+export default CleaningBookingsPage;

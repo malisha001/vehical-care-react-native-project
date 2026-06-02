@@ -17,6 +17,8 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 // Routes
 import authRoutes from "./routes/auth.routes";
 import cleaningRoutes from "./routes/cleaning.routes";
+import cleaningSlotRoutes from "./routes/cleaningSlot.routes";
+import cleaningBookingRoutes from "./routes/cleaningBooking.routes";
 import modItemRoutes from "./routes/modItem.routes";
 import repairSlotRoutes from "./routes/repairSlot.routes";
 import repairBookingRoutes from "./routes/repairBooking.routes";
@@ -93,6 +95,8 @@ app.get("/api/docs.json", (_req, res) => res.json(swaggerSpec));
 // ─── Routes ────────────────────────────────────────────────────────────
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/cleaning-services", cleaningRoutes);
+app.use("/api/cleaning-slots", cleaningSlotRoutes);
+app.use("/api/cleaning-bookings", cleaningBookingRoutes);
 app.use("/api/mod-items", modItemRoutes);
 app.use("/api/repair-slots", repairSlotRoutes);
 app.use("/api/repair-bookings", repairBookingRoutes);
