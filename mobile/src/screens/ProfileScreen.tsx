@@ -4,14 +4,18 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/endpoints";
+import { InfoRow, ScreenHero, StatusPill } from "../components/ui/MobileUI";
+
+type IconName = keyof typeof Ionicons.glyphMap;
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -39,9 +43,9 @@ const ProfileScreen: React.FC = () => {
     icon,
     label,
     onPress,
-    color = "text-gray-700",
+    color = "#374151",
   }: {
-    icon: string;
+    icon: IconName;
     label: string;
     onPress: () => void;
     color?: string;
@@ -49,134 +53,109 @@ const ProfileScreen: React.FC = () => {
     <TouchableOpacity
       className="bg-white flex-row items-center px-4 py-4 border-b border-gray-100"
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.78}
     >
-      <Text className="text-xl w-8">{icon}</Text>
-      <Text className={`flex-1 font-medium ml-2 ${color}`}>{label}</Text>
-      <Text className="text-gray-400 text-lg">›</Text>
+      <View className="h-10 w-10 rounded-2xl bg-gray-50 items-center justify-center mr-3">
+        <Ionicons name={icon} size={20} color={color} />
+      </View>
+      <Text className="flex-1 font-semibold text-gray-800">{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="bg-primary-600 pt-6 pb-10 px-6">
-          <View className="items-center">
-            <View className="w-20 h-20 rounded-full bg-primary-400 items-center justify-center mb-3">
-              <Text className="text-4xl">👤</Text>
+        <ScreenHero
+          eyebrow="Account"
+          title={user?.name || "User"}
+          subtitle={user?.email || ""}
+          icon="person-outline"
+        >
+          {user?.role ? (
+            <View className="self-start">
+              <StatusPill label={user.role} tone="blue" />
             </View>
-            <Text className="text-white font-bold text-xl">
-              {user?.name || "User"}
-            </Text>
-            <Text className="text-primary-200 text-sm mt-1">
-              {user?.email || ""}
-            </Text>
-            {user?.role && (
-              <View className="mt-2 bg-primary-500 px-3 py-1 rounded-full">
-                <Text className="text-primary-100 text-xs font-medium">
-                  {user.role}
-                </Text>
-              </View>
-            )}
-          </View>
+          ) : null}
+        </ScreenHero>
+
+        <View className="mx-4 -mt-4 bg-white rounded-3xl shadow-sm border border-gray-100 mb-4 p-4 gap-3">
+          <InfoRow icon="person-outline" label="Name" value={user?.name || "-"} />
+          <InfoRow icon="mail-outline" label="Email" value={user?.email || "-"} />
+          <InfoRow
+            icon="shield-checkmark-outline"
+            label="Role"
+            value={user?.role?.toLowerCase() || "-"}
+          />
         </View>
 
-        {/* Card pulls up over header */}
-        <View className="-mt-5 mx-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
+        <View className="mx-4 bg-white rounded-3xl overflow-hidden border border-gray-100 mb-4 shadow-sm">
           <View className="px-4 py-3 border-b border-gray-100">
-            <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wide">
-              Account Info
-            </Text>
-          </View>
-          <View className="px-4 py-3 flex-row justify-between">
-            <Text className="text-gray-500 text-sm">Name</Text>
-            <Text className="text-gray-900 font-medium text-sm">
-              {user?.name}
-            </Text>
-          </View>
-          <View className="px-4 py-3 flex-row justify-between border-t border-gray-50">
-            <Text className="text-gray-500 text-sm">Email</Text>
-            <Text className="text-gray-900 font-medium text-sm">
-              {user?.email}
-            </Text>
-          </View>
-          <View className="px-4 py-3 flex-row justify-between border-t border-gray-50">
-            <Text className="text-gray-500 text-sm">Role</Text>
-            <Text className="text-gray-900 font-medium text-sm capitalize">
-              {user?.role?.toLowerCase()}
-            </Text>
-          </View>
-        </View>
-
-        {/* Quick Links */}
-        <View className="mx-4 bg-white rounded-2xl overflow-hidden border border-gray-100 mb-4">
-          <View className="px-4 py-3 border-b border-gray-100">
-            <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wide">
-              My Activity
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-wide">
+              My activity
             </Text>
           </View>
           <MenuItem
-            icon="📋"
-            label="My Repair Bookings"
+            icon="reader-outline"
+            label="My repair bookings"
             onPress={() => navigation.navigate("MyBookings")}
+            color="#2563eb"
           />
           <MenuItem
-            icon="🚚"
-            label="My Carrier Requests"
+            icon="car-outline"
+            label="My carrier requests"
             onPress={() => navigation.navigate("MyCarrierRequests")}
+            color="#059669"
           />
         </View>
 
-        {/* Services */}
-        <View className="mx-4 bg-white rounded-2xl overflow-hidden border border-gray-100 mb-4">
+        <View className="mx-4 bg-white rounded-3xl overflow-hidden border border-gray-100 mb-4 shadow-sm">
           <View className="px-4 py-3 border-b border-gray-100">
-            <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wide">
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-wide">
               Services
             </Text>
           </View>
           <MenuItem
-            icon="🧹"
-            label="Cleaning Services"
+            icon="water-outline"
+            label="Cleaning services"
             onPress={() => navigation.navigate("Cleaning")}
+            color="#2563eb"
           />
           <MenuItem
-            icon="🔩"
-            label="Modification Items"
+            icon="build-outline"
+            label="Modification items"
             onPress={() => navigation.navigate("Modification")}
+            color="#7c3aed"
           />
           <MenuItem
-            icon="🔧"
-            label="Repair Booking"
+            icon="construct-outline"
+            label="Repair booking"
             onPress={() => navigation.navigate("Repair")}
+            color="#ea580c"
           />
           <MenuItem
-            icon="🚗"
-            label="Carrier Service"
+            icon="car-outline"
+            label="Carrier service"
             onPress={() => navigation.navigate("Carrier")}
+            color="#059669"
           />
         </View>
 
-        {/* Logout */}
-        <View className="mx-4 bg-white rounded-2xl overflow-hidden border border-gray-100 mb-8">
+        <View className="mx-4 bg-white rounded-3xl overflow-hidden border border-gray-100 mb-8 shadow-sm">
           <TouchableOpacity
             className="flex-row items-center px-4 py-4"
             onPress={handleLogout}
             disabled={logoutMutation.isPending}
-            activeOpacity={0.7}
+            activeOpacity={0.78}
           >
-            {logoutMutation.isPending ? (
-              <ActivityIndicator
-                size="small"
-                color="#ef4444"
-                className="mr-3"
-              />
-            ) : (
-              <Text className="text-xl w-8">🚪</Text>
-            )}
-            <Text className="flex-1 font-semibold ml-2 text-red-500">
-              Logout
-            </Text>
+            <View className="h-10 w-10 rounded-2xl bg-red-50 items-center justify-center mr-3">
+              {logoutMutation.isPending ? (
+                <ActivityIndicator size="small" color="#ef4444" />
+              ) : (
+                <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+              )}
+            </View>
+            <Text className="flex-1 font-bold text-red-500">Logout</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

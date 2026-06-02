@@ -50,6 +50,7 @@ const MainTabs: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         headerStyle: { backgroundColor: "#1e3a8a" },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "bold" },

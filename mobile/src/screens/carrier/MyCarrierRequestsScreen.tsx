@@ -3,44 +3,25 @@ import {
   View,
   Text,
   FlatList,
-  ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { carrierRequestApi } from "../../api/endpoints";
 import { CarrierRequest } from "../../types";
+import { EmptyState, LoadingState, ScreenHero, StatusPill } from "../../components/ui/MobileUI";
 
 const STATUS_STYLES: Record<
   string,
-  { bg: string; text: string; label: string; icon: string }
+  { tone: "blue" | "green" | "red" | "yellow"; label: string }
 > = {
-  REQUESTED: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-700",
-    label: "Requested",
-    icon: "⏳",
-  },
-  ASSIGNED: {
-    bg: "bg-blue-100",
-    text: "text-blue-700",
-    label: "Assigned",
-    icon: "🚚",
-  },
-  COMPLETED: {
-    bg: "bg-green-100",
-    text: "text-green-700",
-    label: "Completed",
-    icon: "✅",
-  },
-  CANCELLED: {
-    bg: "bg-red-100",
-    text: "text-red-700",
-    label: "Cancelled",
-    icon: "❌",
-  },
+  REQUESTED: { tone: "yellow", label: "Requested" },
+  ASSIGNED: { tone: "blue", label: "Assigned" },
+  COMPLETED: { tone: "green", label: "Completed" },
+  CANCELLED: { tone: "red", label: "Cancelled" },
 };
 
 const MyCarrierRequestsScreen: React.FC = () => {
@@ -57,41 +38,46 @@ const MyCarrierRequestsScreen: React.FC = () => {
   });
 
   const renderItem = ({ item }: { item: CarrierRequest }) => {
-    const s = STATUS_STYLES[item.status] || STATUS_STYLES.REQUESTED;
+    const status = STATUS_STYLES[item.status] || STATUS_STYLES.REQUESTED;
     return (
-      <View className="bg-white border border-gray-200 rounded-2xl p-4 mb-3 mx-4">
+      <View className="bg-white border border-gray-100 rounded-3xl p-4 mb-3 mx-4 shadow-sm">
         <View className="flex-row items-start justify-between mb-3">
-          <View className="flex-1 mr-3">
-            <Text className="text-gray-900 font-bold text-base">
-              {item.name}
+          <View className="flex-row flex-1 mr-3">
+            <View className="h-12 w-12 rounded-2xl bg-emerald-50 items-center justify-center mr-3 border border-emerald-100">
+              <Ionicons name="car-outline" size={22} color="#059669" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-gray-950 font-bold text-base">
+                {item.name}
+              </Text>
+              <Text className="text-gray-500 text-sm mt-1">{item.mobile}</Text>
+            </View>
+          </View>
+          <StatusPill label={status.label} tone={status.tone} />
+        </View>
+
+        <View className="bg-gray-50 rounded-2xl px-3 py-2 mb-3">
+          <View className="flex-row items-center mb-1">
+            <Ionicons name="location-outline" size={14} color="#9ca3af" />
+            <Text className="text-gray-400 text-xs font-bold ml-1">
+              Pickup address
             </Text>
-            <Text className="text-gray-500 text-sm">📞 {item.mobile}</Text>
           </View>
-          <View
-            className={`px-3 py-1.5 rounded-full flex-row items-center ${s.bg}`}
-          >
-            <Text className="mr-1 text-xs">{s.icon}</Text>
-            <Text className={`text-xs font-semibold ${s.text}`}>{s.label}</Text>
-          </View>
-        </View>
-
-        <View className="bg-gray-50 rounded-xl px-3 py-2 mb-3">
-          <Text className="text-gray-400 text-xs mb-0.5">
-            📍 Pickup Address
+          <Text className="text-gray-700 text-sm leading-5">
+            {item.address}
           </Text>
-          <Text className="text-gray-700 text-sm">{item.address}</Text>
         </View>
 
-        {item.assignedDriver && (
-          <View className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-3">
-            <Text className="text-blue-600 text-xs font-semibold mb-0.5">
-              Assigned Driver
+        {item.assignedDriver ? (
+          <View className="bg-blue-50 border border-blue-100 rounded-2xl px-3 py-2 mb-3">
+            <Text className="text-blue-600 text-xs font-bold mb-0.5">
+              Assigned driver
             </Text>
             <Text className="text-blue-700 text-sm">
-              🧑‍✈️ {item.assignedDriver}
+              {item.assignedDriver}
             </Text>
           </View>
-        )}
+        ) : null}
 
         {item.notes ? (
           <Text className="text-gray-500 text-sm italic">"{item.notes}"</Text>
@@ -102,50 +88,37 @@ const MyCarrierRequestsScreen: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="px-4 pt-4 pb-2">
-        <Text className="text-2xl font-bold text-gray-900">
-          My Carrier Requests
-        </Text>
-        <Text className="text-gray-500 text-sm mt-1">
-          Track your carrier service requests
-        </Text>
-      </View>
+      <ScreenHero
+        eyebrow="Activity"
+        title="My Carrier Requests"
+        subtitle="Track pickup requests and assigned driver details."
+        icon="car-outline"
+        accent="green"
+      />
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
+        <LoadingState color="#059669" />
       ) : requests.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-5xl mb-4">🚚</Text>
-          <Text className="text-gray-600 font-semibold text-lg text-center">
-            No Requests Yet
-          </Text>
-          <Text className="text-gray-400 text-sm text-center mt-2">
-            You haven't made any carrier service requests yet.
-          </Text>
-          <TouchableOpacity
-            className="bg-orange-500 rounded-2xl px-6 py-3 mt-6"
-            onPress={() => navigation.navigate("Carrier")}
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-bold">
-              Request Carrier Service
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="car-outline"
+          title="No requests yet"
+          message="You have not made any carrier service requests yet."
+          actionLabel="Request carrier service"
+          onAction={() => navigation.navigate("Carrier")}
+          accent="green"
+        />
       ) : (
         <FlatList
           data={requests}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
+          contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={refetch}
-              tintColor="#f97316"
+              tintColor="#059669"
             />
           }
         />

@@ -112,7 +112,7 @@ const CleaningServicesPage: React.FC = () => {
     {
       key: "price",
       label: "Price",
-      render: (v: unknown) => (v ? `₹${v}` : "-"),
+      render: (v: unknown) => (v ? `LKR ${v}` : "-"),
     },
     {
       key: "duration",
@@ -202,7 +202,7 @@ const CleaningServicesPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Price (₹)</label>
+              <label className="label">Price (LKR)</label>
               <input
                 {...register("price", { valueAsNumber: true })}
                 type="number"
