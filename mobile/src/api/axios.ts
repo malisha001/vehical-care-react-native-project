@@ -2,7 +2,8 @@ import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.8.153:5001/api";
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  "https://vehical-care-react-native-project.onrender.com/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

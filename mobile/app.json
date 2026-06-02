@@ -30,7 +30,7 @@
     },
     "newArchEnabled": false,
     "extra": {
-      "apiBaseUrl": "http://10.0.2.2:5000/api"
+      "apiBaseUrl": "https://vehical-care-react-native-project.onrender.com/api"
     }
   }
 }
