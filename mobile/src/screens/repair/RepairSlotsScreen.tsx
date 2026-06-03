@@ -26,7 +26,7 @@ const schema = z.object({
   phone: z.string().min(7, "Please enter a valid phone number").max(20),
   requestedDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format"),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter pickup date as YYYY-MM-DD"),
   vehicleModel: z.string().max(100).optional(),
   vehiclePlate: z.string().max(20).optional(),
   issueDescription: z
@@ -35,8 +35,6 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-
-const today = new Date().toISOString().split("T")[0];
 
 const RepairSlotsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -52,7 +50,7 @@ const RepairSlotsScreen: React.FC = () => {
     defaultValues: {
       customerName: user?.name || "",
       phone: "",
-      requestedDate: today,
+      requestedDate: "",
       vehicleModel: "",
       vehiclePlate: "",
       issueDescription: "",
@@ -65,14 +63,14 @@ const RepairSlotsScreen: React.FC = () => {
       reset({
         customerName: user?.name || "",
         phone: "",
-        requestedDate: today,
+        requestedDate: "",
         vehicleModel: "",
         vehiclePlate: "",
         issueDescription: "",
       });
       Alert.alert(
         "Request sent",
-        "Your repair request has been sent. The admin will review the date and send you an update.",
+        "Your repair request has been sent. The admin will review your pickup date and send you an update.",
         [{ text: "OK", onPress: () => navigation.navigate("MyBookings") }],
       );
     },
@@ -98,7 +96,7 @@ const RepairSlotsScreen: React.FC = () => {
         <ScreenHero
           eyebrow="Repair"
           title="Repair Request"
-          subtitle="Tell us what needs attention. A mechanic will review and confirm the repair date."
+          subtitle="Tell us what needs attention and when you want the vehicle picked up."
           icon="construct-outline"
           accent="orange"
         >
@@ -183,7 +181,7 @@ const RepairSlotsScreen: React.FC = () => {
 
             <View className="mb-4">
               <Text className="text-gray-700 font-semibold mb-2">
-                Requested date <Text className="text-red-500">*</Text>
+                Pickup date <Text className="text-red-500">*</Text>
               </Text>
               <Controller
                 control={control}
@@ -193,7 +191,7 @@ const RepairSlotsScreen: React.FC = () => {
                     className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 ${
                       errors.requestedDate ? "border-red-400" : "border-gray-100"
                     }`}
-                    placeholder="YYYY-MM-DD"
+                    placeholder="YYYY-MM-DD, e.g. 2026-06-10"
                     placeholderTextColor="#9ca3af"
                     value={value}
                     onChangeText={onChange}

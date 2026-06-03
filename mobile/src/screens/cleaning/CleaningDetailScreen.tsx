@@ -74,7 +74,7 @@ const CleaningDetailScreen: React.FC = () => {
   const grouped = groupByDate(slots.filter((slot) => slot.isAvailable));
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="bg-primary-900 px-6 pt-8 pb-16">
           <View className="h-16 w-16 rounded-3xl bg-primary-600 items-center justify-center mb-5">

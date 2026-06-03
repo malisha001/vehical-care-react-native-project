@@ -21,6 +21,14 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const DEFAULT_MOD_CATEGORIES = [
+  "Exhaust",
+  "Lighting",
+  "Body Kit",
+  "Suspension",
+  "Engine",
+];
+
 const ModificationItemsPage: React.FC = () => {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,6 +59,10 @@ const ModificationItemsPage: React.FC = () => {
     queryFn: () => modItemApi.getCategories().then((r) => r.data.data),
   });
 
+  const categoryOptions = Array.from(
+    new Set([...(categories || []), ...DEFAULT_MOD_CATEGORIES]),
+  ).sort();
+
   const {
     register,
     handleSubmit,
@@ -64,6 +76,7 @@ const ModificationItemsPage: React.FC = () => {
     mutationFn: (data: Partial<ModificationItem>) => modItemApi.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mod-items"] });
+      qc.invalidateQueries({ queryKey: ["mod-categories"] });
       closeModal();
     },
   });
@@ -78,6 +91,7 @@ const ModificationItemsPage: React.FC = () => {
     }) => modItemApi.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mod-items"] });
+      qc.invalidateQueries({ queryKey: ["mod-categories"] });
       closeModal();
     },
   });
@@ -251,11 +265,22 @@ const ModificationItemsPage: React.FC = () => {
             </div>
             <div>
               <label className="label">Category</label>
-              <input
+              <select
                 {...register("category")}
                 className="input"
-                placeholder="e.g. Exhaust, Lighting"
-              />
+              >
+                <option value="">Select category</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              {errors.category && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
             <div>
               <label className="label">Stock Qty</label>

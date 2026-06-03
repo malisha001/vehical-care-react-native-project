@@ -104,7 +104,7 @@ const MyBookingsScreen: React.FC = () => {
             </View>
             <View className="flex-1">
               <Text className="text-base font-bold text-gray-950">
-                Requested: {item.requestedDate}
+                Pickup: {item.requestedDate}
               </Text>
               {item.scheduledDate ? (
                 <Text className="text-gray-500 text-sm mt-1">

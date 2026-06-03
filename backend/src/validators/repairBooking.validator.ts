@@ -5,7 +5,7 @@ export const createRepairBookingSchema = z.object({
   phone: z.string().min(7, "Phone number is required").max(20),
   requestedDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Request date must be YYYY-MM-DD"),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Pickup date must be YYYY-MM-DD"),
   vehicleModel: z.string().max(100).optional(),
   vehiclePlate: z.string().max(20).optional(),
   issueDescription: z

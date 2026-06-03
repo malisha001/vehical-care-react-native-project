@@ -85,7 +85,7 @@ const RepairBookingsPage: React.FC = () => {
       render: (v: unknown, row: unknown) =>
         `${(row as RepairBooking).vehicleModel || ""} ${v || ""}`.trim() || "-",
     },
-    { key: "requestedDate", label: "Requested Date" },
+    { key: "requestedDate", label: "Pickup Date" },
     {
       key: "scheduledDate",
       label: "Scheduled Date",
@@ -215,7 +215,7 @@ const RepairBookingsPage: React.FC = () => {
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
               <p>
-                <strong>Requested date:</strong>{" "}
+                <strong>Pickup date:</strong>{" "}
                 {statusModal.booking.requestedDate}
               </p>
               <p className="mt-1">
