@@ -6,6 +6,8 @@ import {
   registerSchema,
   loginSchema,
   refreshSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from "../validators/auth.validator";
 
 const router = Router();
@@ -56,6 +58,34 @@ router.post("/register", validate(registerSchema), authController.register);
  *         description: Login successful
  */
 router.post("/login", validate(loginSchema), authController.login);
+
+/**
+ * @openapi
+ * /auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request password reset OTP
+ *     security: []
+ */
+router.post(
+  "/forgot-password",
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+
+/**
+ * @openapi
+ * /auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password with OTP
+ *     security: []
+ */
+router.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  authController.resetPassword,
+);
 
 /**
  * @openapi

@@ -103,7 +103,7 @@ const LoginScreen: React.FC = () => {
                   </View>
                 </View>
 
-                <View className="mb-5">
+                <View className="mb-3">
                   <Text className="text-sm font-semibold text-gray-700 mb-2">
                     Password
                   </Text>
@@ -134,6 +134,16 @@ const LoginScreen: React.FC = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("ForgotPassword")}
+                  className="self-end mb-5 py-1"
+                  activeOpacity={0.8}
+                >
+                  <Text className="text-primary-600 text-sm font-semibold">
+                    Forgot password?
+                  </Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={handleLogin}

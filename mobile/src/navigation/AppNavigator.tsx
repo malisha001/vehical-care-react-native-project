@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 // Auth Screens
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
+import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 
 // Main Screens
 import HomeScreen from "../screens/HomeScreen";
@@ -25,6 +26,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   Main: undefined;
   CleaningDetail: { id: string };
   CleaningBookingForm: {
@@ -126,6 +128,10 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+            />
           </>
         ) : (
           <>
