@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import User from "../models/User";
 import env from "../config/env";
+import logger from "../utils/logger";
 import {
   signAccessToken,
   signRefreshToken,
@@ -58,6 +59,10 @@ const sendPasswordResetOtp = async (params: {
   });
 
   if (!response.ok) {
+    const providerMessage = await response.text();
+    logger.error(
+      `EmailJS password reset email failed: ${response.status} ${providerMessage}`,
+    );
     throw new AppError("Failed to send password reset email", 502);
   }
 };
@@ -133,11 +138,19 @@ export const requestPasswordReset = async (data: ForgotPasswordInput) => {
   );
 
   await user.save({ validateBeforeSave: false });
-  await sendPasswordResetOtp({
-    toEmail: user.email,
-    toName: user.name,
-    otp,
-  });
+
+  try {
+    await sendPasswordResetOtp({
+      toEmail: user.email,
+      toName: user.name,
+      otp,
+    });
+  } catch (err) {
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    throw err;
+  }
 
   return {
     expiresInMinutes: RESET_OTP_EXPIRY_MINUTES,

@@ -1,24 +1,29 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+const envValue = (key: string, fallback = "") =>
+  (process.env[key] || fallback).trim();
+
 const env = {
-  PORT: process.env.PORT || 5000,
-  NODE_ENV: process.env.NODE_ENV || "development",
+  PORT: envValue("PORT", "5000"),
+  NODE_ENV: envValue("NODE_ENV", "development"),
   MONGO_URI:
-    process.env.MONGO_URI || "mongodb://localhost:27017/vehicle-service-center",
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "access_secret_fallback",
-  JWT_REFRESH_SECRET:
-    process.env.JWT_REFRESH_SECRET || "refresh_secret_fallback",
-  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
-  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || "admin@vehicleservice.com",
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "Admin@123456",
-  ADMIN_NAME: process.env.ADMIN_NAME || "Super Admin",
-  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-  EMAILJS_SERVICE_ID: process.env.EMAILJS_SERVICE_ID || "",
-  EMAILJS_TEMPLATE_ID: process.env.EMAILJS_TEMPLATE_ID || "",
-  EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY || "",
-  EMAILJS_PRIVATE_KEY: process.env.EMAILJS_PRIVATE_KEY || "",
+    envValue("MONGO_URI") || "mongodb://localhost:27017/vehicle-service-center",
+  JWT_ACCESS_SECRET: envValue("JWT_ACCESS_SECRET", "access_secret_fallback"),
+  JWT_REFRESH_SECRET: envValue(
+    "JWT_REFRESH_SECRET",
+    "refresh_secret_fallback",
+  ),
+  JWT_ACCESS_EXPIRES_IN: envValue("JWT_ACCESS_EXPIRES_IN", "15m"),
+  JWT_REFRESH_EXPIRES_IN: envValue("JWT_REFRESH_EXPIRES_IN", "7d"),
+  ADMIN_EMAIL: envValue("ADMIN_EMAIL", "admin@vehicleservice.com"),
+  ADMIN_PASSWORD: envValue("ADMIN_PASSWORD", "Admin@123456"),
+  ADMIN_NAME: envValue("ADMIN_NAME", "Super Admin"),
+  CLIENT_ORIGIN: envValue("CLIENT_ORIGIN", "http://localhost:5173"),
+  EMAILJS_SERVICE_ID: envValue("EMAILJS_SERVICE_ID"),
+  EMAILJS_TEMPLATE_ID: envValue("EMAILJS_TEMPLATE_ID"),
+  EMAILJS_PUBLIC_KEY: envValue("EMAILJS_PUBLIC_KEY"),
+  EMAILJS_PRIVATE_KEY: envValue("EMAILJS_PRIVATE_KEY"),
 };
 
 export default env;
