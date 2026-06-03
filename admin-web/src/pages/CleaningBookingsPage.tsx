@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { cleaningApi, cleaningBookingApi } from "../api/endpoints";
 import { BookingStatus, CleaningBooking, CleaningService } from "../types";
 import Modal from "../components/ui/Modal";
@@ -17,9 +19,11 @@ const STATUSES: BookingStatus[] = [
 const CleaningBookingsPage: React.FC = () => {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [fromDateFilter, setFromDateFilter] = useState("");
+  const [toDateFilter, setToDateFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [reportLoading, setReportLoading] = useState(false);
   const [statusModal, setStatusModal] = useState<{
     booking: CleaningBooking;
     status: BookingStatus;
@@ -32,14 +36,22 @@ const CleaningBookingsPage: React.FC = () => {
   });
 
   const { data: res, isLoading } = useQuery({
-    queryKey: ["cleaning-bookings", page, statusFilter, dateFilter, serviceFilter],
+    queryKey: [
+      "cleaning-bookings",
+      page,
+      statusFilter,
+      fromDateFilter,
+      toDateFilter,
+      serviceFilter,
+    ],
     queryFn: () =>
       cleaningBookingApi
         .getAll({
           page,
           limit: 20,
           status: statusFilter || undefined,
-          date: dateFilter || undefined,
+          fromDate: fromDateFilter || undefined,
+          toDate: toDateFilter || undefined,
           serviceId: serviceFilter || undefined,
         })
         .then((r) => r.data),
@@ -47,6 +59,13 @@ const CleaningBookingsPage: React.FC = () => {
 
   const bookings = (res?.data as CleaningBooking[]) || [];
   const meta = res?.meta;
+  const hasFilters =
+    statusFilter || fromDateFilter || toDateFilter || serviceFilter;
+
+  const updateFilter = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    setPage(1);
+  };
 
   const updateMutation = useMutation({
     mutationFn: ({
@@ -65,6 +84,105 @@ const CleaningBookingsPage: React.FC = () => {
   const serviceName = (serviceId: CleaningBooking["serviceId"]) => {
     if (typeof serviceId === "object") return serviceId.name;
     return services.find((s: CleaningService) => s._id === serviceId)?.name || "-";
+  };
+
+  const userName = (userId: CleaningBooking["userId"]) => {
+    if (typeof userId === "object") return userId.name;
+    return "-";
+  };
+
+  const vehicleText = (booking: CleaningBooking) =>
+    `${booking.vehicleModel || ""} ${booking.vehiclePlate || ""}`.trim() || "-";
+
+  const generatePdfReport = async () => {
+    try {
+      setReportLoading(true);
+      const reportLimit = Math.max(meta?.total ?? 5000, 1);
+      const response = await cleaningBookingApi.getAll({
+        page: 1,
+        limit: reportLimit,
+        status: statusFilter || undefined,
+        fromDate: fromDateFilter || undefined,
+        toDate: toDateFilter || undefined,
+        serviceId: serviceFilter || undefined,
+      });
+      const reportBookings = response.data.data || [];
+      const reportMeta = response.data.meta;
+      const generatedAt = format(new Date(), "MMM dd, yyyy HH:mm");
+      const selectedService =
+        services.find((s: CleaningService) => s._id === serviceFilter)?.name ||
+        "All Services";
+      const dateRange =
+        fromDateFilter || toDateFilter
+          ? `${fromDateFilter || "Any"} to ${toDateFilter || "Any"}`
+          : "All Dates";
+      const statusCounts = STATUSES.reduce<Record<BookingStatus, number>>(
+        (acc, status) => {
+          acc[status] = reportBookings.filter((b) => b.status === status).length;
+          return acc;
+        },
+        {
+          PENDING: 0,
+          CONFIRMED: 0,
+          COMPLETED: 0,
+          CANCELLED: 0,
+        },
+      );
+
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(18);
+      doc.text("Cleaning Bookings Report", 14, 16);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${generatedAt}`, 14, 24);
+      doc.text(`Service: ${selectedService}`, 14, 31);
+      doc.text(`Status: ${statusFilter || "All Statuses"}`, 14, 38);
+      doc.text(`Slot Date Range: ${dateRange}`, 14, 45);
+      doc.text(`Total Bookings: ${reportMeta?.total ?? reportBookings.length}`, 14, 52);
+      doc.text(
+        `Pending: ${statusCounts.PENDING}   Confirmed: ${statusCounts.CONFIRMED}   Completed: ${statusCounts.COMPLETED}   Cancelled: ${statusCounts.CANCELLED}`,
+        14,
+        59,
+      );
+
+      autoTable(doc, {
+        startY: 68,
+        head: [
+          [
+            "Created",
+            "Slot Date",
+            "Time Slot",
+            "Customer",
+            "Service",
+            "Vehicle",
+            "Status",
+            "Notes",
+          ],
+        ],
+        body: reportBookings.map((booking) => [
+          format(new Date(booking.createdAt), "yyyy-MM-dd"),
+          booking.date,
+          booking.timeSlot,
+          userName(booking.userId),
+          serviceName(booking.serviceId),
+          vehicleText(booking),
+          booking.status,
+          booking.notes || "-",
+        ]),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [31, 41, 55] },
+        columnStyles: {
+          7: { cellWidth: 54 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      const filenameDate = format(new Date(), "yyyy-MM-dd-HHmm");
+      doc.save(`cleaning-bookings-report-${filenameDate}.pdf`);
+    } catch {
+      window.alert("Could not generate the cleaning bookings PDF report.");
+    } finally {
+      setReportLoading(false);
+    }
   };
 
   const columns = [
@@ -135,7 +253,7 @@ const CleaningBookingsPage: React.FC = () => {
       <div className="flex gap-3 flex-wrap">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => updateFilter(setStatusFilter, e.target.value)}
           className="input max-w-xs"
         >
           <option value="">All Statuses</option>
@@ -147,7 +265,7 @@ const CleaningBookingsPage: React.FC = () => {
         </select>
         <select
           value={serviceFilter}
-          onChange={(e) => setServiceFilter(e.target.value)}
+          onChange={(e) => updateFilter(setServiceFilter, e.target.value)}
           className="input max-w-xs"
         >
           <option value="">All Services</option>
@@ -157,17 +275,34 @@ const CleaningBookingsPage: React.FC = () => {
             </option>
           ))}
         </select>
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="input max-w-xs"
-        />
-        {(statusFilter || dateFilter || serviceFilter) && (
+        <div className="flex items-end gap-2">
+          <label className="text-xs font-medium text-gray-500">
+            From
+            <input
+              type="date"
+              value={fromDateFilter}
+              max={toDateFilter || undefined}
+              onChange={(e) => updateFilter(setFromDateFilter, e.target.value)}
+              className="input mt-1 max-w-xs"
+            />
+          </label>
+          <label className="text-xs font-medium text-gray-500">
+            To
+            <input
+              type="date"
+              value={toDateFilter}
+              min={fromDateFilter || undefined}
+              onChange={(e) => updateFilter(setToDateFilter, e.target.value)}
+              className="input mt-1 max-w-xs"
+            />
+          </label>
+        </div>
+        {hasFilters && (
           <button
             onClick={() => {
               setStatusFilter("");
-              setDateFilter("");
+              setFromDateFilter("");
+              setToDateFilter("");
               setServiceFilter("");
               setPage(1);
             }}
@@ -176,6 +311,13 @@ const CleaningBookingsPage: React.FC = () => {
             Clear
           </button>
         )}
+        <button
+          onClick={generatePdfReport}
+          disabled={reportLoading || isLoading}
+          className="btn-primary"
+        >
+          {reportLoading ? "Generating..." : "Download PDF"}
+        </button>
         <span className="ml-auto text-sm text-gray-500 self-end">
           {meta?.total ?? 0} total
         </span>

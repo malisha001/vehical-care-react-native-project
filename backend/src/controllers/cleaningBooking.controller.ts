@@ -52,12 +52,16 @@ export const getAllBookings = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const status = req.query.status as string | undefined;
     const date = req.query.date as string | undefined;
+    const fromDate = req.query.fromDate as string | undefined;
+    const toDate = req.query.toDate as string | undefined;
     const serviceId = req.query.serviceId as string | undefined;
     const result = await cleaningBookingService.getAllBookings(
       page,
       limit,
       status,
       date,
+      fromDate,
+      toDate,
       serviceId,
     );
     sendSuccess(res, "All cleaning bookings fetched", result.bookings, 200, {

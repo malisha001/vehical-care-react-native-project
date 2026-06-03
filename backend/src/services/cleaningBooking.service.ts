@@ -91,11 +91,20 @@ export const getAllBookings = async (
   limit = 10,
   status?: string,
   date?: string,
+  fromDate?: string,
+  toDate?: string,
   serviceId?: string,
 ) => {
   const filter: Record<string, unknown> = {};
   if (status) filter.status = status;
-  if (date) filter.date = date;
+  if (date) {
+    filter.date = date;
+  } else if (fromDate || toDate) {
+    const dateRange: Record<string, string> = {};
+    if (fromDate) dateRange.$gte = fromDate;
+    if (toDate) dateRange.$lte = toDate;
+    filter.date = dateRange;
+  }
   if (serviceId) filter.serviceId = serviceId;
 
   const skip = (page - 1) * limit;

@@ -59,6 +59,8 @@ export const cleaningBookingApi = {
     limit?: number;
     status?: string;
     date?: string;
+    fromDate?: string;
+    toDate?: string;
     serviceId?: string;
   }) => api.get<ApiResponse<CleaningBooking[]>>("/cleaning-bookings", { params }),
   updateStatus: (id: string, data: { status: string; adminNotes?: string }) =>
