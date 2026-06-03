@@ -6,14 +6,60 @@ import Badge from "../components/ui/Badge";
 import Modal from "../components/ui/Modal";
 import Table from "../components/ui/Table";
 
-const DEFAULT_TIME_SLOTS = [
-  "09:00-09:30",
-  "09:30-10:00",
-  "10:00-10:45",
-  "11:00-12:00",
-  "14:00-15:00",
-  "15:00-17:00",
+const DEFAULT_SLOT_MINUTES = 30;
+const WORK_PERIODS = [
+  { start: "08:00", end: "13:00" },
+  { start: "14:00", end: "18:00" },
 ];
+
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const minutesToTime = (minutes: number) => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+};
+
+const durationToMinutes = (duration?: string) => {
+  if (!duration) return DEFAULT_SLOT_MINUTES;
+
+  const normalized = duration.trim().toLowerCase();
+  const hourMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours)/);
+  const minuteMatch = normalized.match(/(\d+)\s*(m|min|mins|minute|minutes)/);
+  const plainNumberMatch = normalized.match(/^(\d+)$/);
+
+  let minutes = 0;
+  if (hourMatch) minutes += Number(hourMatch[1]) * 60;
+  if (minuteMatch) minutes += Number(minuteMatch[1]);
+  if (!minutes && plainNumberMatch) minutes = Number(plainNumberMatch[1]);
+
+  return minutes > 0 ? Math.round(minutes) : DEFAULT_SLOT_MINUTES;
+};
+
+const generateTimeSlots = (duration?: string) => {
+  const slotMinutes = durationToMinutes(duration);
+
+  return WORK_PERIODS.flatMap(({ start, end }) => {
+    const slots: string[] = [];
+    const periodStart = timeToMinutes(start);
+    const periodEnd = timeToMinutes(end);
+
+    for (
+      let current = periodStart;
+      current + slotMinutes <= periodEnd;
+      current += slotMinutes
+    ) {
+      slots.push(
+        `${minutesToTime(current)}-${minutesToTime(current + slotMinutes)}`,
+      );
+    }
+
+    return slots;
+  });
+};
 
 const CleaningSlotsPage: React.FC = () => {
   const qc = useQueryClient();
@@ -25,7 +71,7 @@ const CleaningSlotsPage: React.FC = () => {
     serviceId: "",
     startDate: "",
     endDate: "",
-    timeSlots: DEFAULT_TIME_SLOTS,
+    timeSlots: generateTimeSlots(),
     maxBookings: 1,
   });
 
@@ -66,6 +112,23 @@ const CleaningSlotsPage: React.FC = () => {
       setDeleteId(null);
     },
   });
+
+  const getServiceById = (serviceId: string) =>
+    services.find((service: CleaningService) => service._id === serviceId);
+
+  const selectedBulkService = getServiceById(bulkData.serviceId);
+  const generatedBulkTimeSlots = generateTimeSlots(
+    selectedBulkService?.duration,
+  );
+
+  const setBulkService = (serviceId: string) => {
+    const selectedService = getServiceById(serviceId);
+    setBulkData((p) => ({
+      ...p,
+      serviceId,
+      timeSlots: generateTimeSlots(selectedService?.duration),
+    }));
+  };
 
   const toggleTimeSlot = (ts: string) => {
     setBulkData((p) => ({
@@ -145,9 +208,12 @@ const CleaningSlotsPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Cleaning Slots</h1>
         <button
           onClick={() => {
+            const selectedServiceId = serviceFilter || services[0]?._id || "";
+            const selectedService = getServiceById(selectedServiceId);
             setBulkData((p) => ({
               ...p,
-              serviceId: serviceFilter || services[0]?._id || "",
+              serviceId: selectedServiceId,
+              timeSlots: generateTimeSlots(selectedService?.duration),
             }));
             setBulkModal(true);
           }}
@@ -217,9 +283,7 @@ const CleaningSlotsPage: React.FC = () => {
             <label className="label">Cleaning Service</label>
             <select
               value={bulkData.serviceId}
-              onChange={(e) =>
-                setBulkData((p) => ({ ...p, serviceId: e.target.value }))
-              }
+              onChange={(e) => setBulkService(e.target.value)}
               className="input"
             >
               <option value="">Select service</option>
@@ -270,9 +334,16 @@ const CleaningSlotsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="label">Time Slots</label>
+            <label className="label">
+              Time Slots
+              {bulkData.serviceId ? (
+                <span className="ml-2 font-normal text-gray-500">
+                  {durationToMinutes(selectedBulkService?.duration)} mins each
+                </span>
+              ) : null}
+            </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
-              {DEFAULT_TIME_SLOTS.map((ts) => (
+              {generatedBulkTimeSlots.map((ts) => (
                 <label
                   key={ts}
                   className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${
@@ -291,6 +362,11 @@ const CleaningSlotsPage: React.FC = () => {
                 </label>
               ))}
             </div>
+            {bulkData.serviceId && generatedBulkTimeSlots.length === 0 ? (
+              <p className="text-sm text-gray-500 mt-2">
+                No slots fit this duration within 08:00-13:00 or 14:00-18:00.
+              </p>
+            ) : null}
           </div>
           <div className="flex gap-3 pt-2">
             <button

@@ -15,6 +15,7 @@ import HomeScreen from "../screens/HomeScreen";
 import CleaningListScreen from "../screens/cleaning/CleaningListScreen";
 import CleaningDetailScreen from "../screens/cleaning/CleaningDetailScreen";
 import CleaningBookingFormScreen from "../screens/cleaning/CleaningBookingFormScreen";
+import MyCleaningBookingsScreen from "../screens/cleaning/MyCleaningBookingsScreen";
 import ModificationListScreen from "../screens/modification/ModificationListScreen";
 import ModificationDetailScreen from "../screens/modification/ModificationDetailScreen";
 import RepairSlotsScreen from "../screens/repair/RepairSlotsScreen";
@@ -36,6 +37,7 @@ export type RootStackParamList = {
     date: string;
     timeSlot: string;
   };
+  MyCleaningBookings: undefined;
   ModificationDetail: { id: string };
   MyBookings: undefined;
   CarrierRequestForm: undefined;
@@ -152,6 +154,16 @@ const AppNavigator: React.FC = () => {
               options={{
                 headerShown: true,
                 title: "Book Cleaning Slot",
+                headerStyle: { backgroundColor: "#1e3a8a" },
+                headerTintColor: "#fff",
+              }}
+            />
+            <Stack.Screen
+              name="MyCleaningBookings"
+              component={MyCleaningBookingsScreen}
+              options={{
+                headerShown: true,
+                title: "Cleaning Reservations",
                 headerStyle: { backgroundColor: "#1e3a8a" },
                 headerTintColor: "#fff",
               }}

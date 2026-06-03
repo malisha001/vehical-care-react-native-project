@@ -96,6 +96,12 @@ const ProfileScreen: React.FC = () => {
             </Text>
           </View>
           <MenuItem
+            icon="water-outline"
+            label="My cleaning reservations"
+            onPress={() => navigation.navigate("MyCleaningBookings")}
+            color="#2563eb"
+          />
+          <MenuItem
             icon="reader-outline"
             label="My repair bookings"
             onPress={() => navigation.navigate("MyBookings")}

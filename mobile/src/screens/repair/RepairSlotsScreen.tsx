@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   Text,
@@ -36,9 +37,60 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const toDateValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const CALENDAR_DAY_WIDTH = `${100 / 7}%` as const;
+
+const fromDateValue = (value?: string) => {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const formatDateLabel = (value?: string) => {
+  const date = fromDateValue(value);
+  if (!date) return "";
+
+  return date.toLocaleDateString("en-LK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const monthTitle = (date: Date) =>
+  date.toLocaleDateString("en-LK", { month: "long", year: "numeric" });
+
+const getCalendarDays = (monthDate: Date) => {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const blanks = Array.from({ length: firstDay.getDay() }, () => null);
+  const days = Array.from(
+    { length: daysInMonth },
+    (_, index) => new Date(year, month, index + 1),
+  );
+
+  return [...blanks, ...days];
+};
+
 const RepairSlotsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
+  const todayValue = useMemo(() => toDateValue(new Date()), []);
+  const calendarDays = useMemo(
+    () => getCalendarDays(visibleMonth),
+    [visibleMonth],
+  );
 
   const {
     control,
@@ -85,6 +137,12 @@ const RepairSlotsScreen: React.FC = () => {
 
   const onSubmit = (data: FormData) => {
     mutation.mutate(data);
+  };
+
+  const moveMonth = (offset: number) => {
+    setVisibleMonth(
+      (current) => new Date(current.getFullYear(), current.getMonth() + offset, 1),
+    );
   };
 
   return (
@@ -186,17 +244,164 @@ const RepairSlotsScreen: React.FC = () => {
               <Controller
                 control={control}
                 name="requestedDate"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`bg-gray-50 border rounded-2xl px-4 py-3.5 text-gray-900 ${
-                      errors.requestedDate ? "border-red-400" : "border-gray-100"
-                    }`}
-                    placeholder="YYYY-MM-DD, e.g. 2026-06-10"
-                    placeholderTextColor="#9ca3af"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                  />
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TouchableOpacity
+                      className={`bg-gray-50 border rounded-2xl px-4 py-3.5 flex-row items-center justify-between ${
+                        errors.requestedDate
+                          ? "border-red-400"
+                          : "border-gray-100"
+                      }`}
+                      onPress={() => {
+                        const selectedDate = fromDateValue(value);
+                        setVisibleMonth(selectedDate || new Date());
+                        setIsCalendarOpen(true);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <View className="flex-row items-center flex-1">
+                        <Ionicons
+                          name="calendar-outline"
+                          size={20}
+                          color="#f97316"
+                        />
+                        <Text
+                          className={`ml-3 text-base ${
+                            value ? "text-gray-900" : "text-gray-400"
+                          }`}
+                        >
+                          {value ? formatDateLabel(value) : "Select pickup date"}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name="chevron-down"
+                        size={18}
+                        color="#9ca3af"
+                      />
+                    </TouchableOpacity>
+
+                    <Modal
+                      visible={isCalendarOpen}
+                      transparent
+                      animationType="fade"
+                      onRequestClose={() => setIsCalendarOpen(false)}
+                    >
+                      <View className="flex-1 bg-black/40 justify-end">
+                        <View className="bg-white rounded-t-3xl p-5">
+                          <View className="flex-row items-center justify-between mb-5">
+                            <TouchableOpacity
+                              className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                              onPress={() => moveMonth(-1)}
+                              activeOpacity={0.8}
+                            >
+                              <Ionicons
+                                name="chevron-back"
+                                size={20}
+                                color="#111827"
+                              />
+                            </TouchableOpacity>
+                            <Text className="text-gray-950 font-bold text-lg">
+                              {monthTitle(visibleMonth)}
+                            </Text>
+                            <TouchableOpacity
+                              className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                              onPress={() => moveMonth(1)}
+                              activeOpacity={0.8}
+                            >
+                              <Ionicons
+                                name="chevron-forward"
+                                size={20}
+                                color="#111827"
+                              />
+                            </TouchableOpacity>
+                          </View>
+
+                          <View className="flex-row mb-2">
+                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                              (day) => (
+                                <Text
+                                  key={day}
+                                  className="flex-1 text-center text-xs font-bold text-gray-400"
+                                >
+                                  {day}
+                                </Text>
+                              ),
+                            )}
+                          </View>
+
+                          <View className="flex-row flex-wrap">
+                            {calendarDays.map((day, index) => {
+                              const dayValue = day ? toDateValue(day) : "";
+                              const isSelected = dayValue === value;
+                              const isPast = !!day && dayValue < todayValue;
+
+                              return (
+                                <View
+                                  key={`${dayValue}-${index}`}
+                                  className="p-1"
+                                  style={{ width: CALENDAR_DAY_WIDTH }}
+                                >
+                                  {day ? (
+                                    <TouchableOpacity
+                                      className={`h-10 rounded-full items-center justify-center ${
+                                        isSelected
+                                          ? "bg-orange-500"
+                                          : isPast
+                                            ? "bg-gray-50"
+                                            : "bg-white"
+                                      }`}
+                                      disabled={isPast}
+                                      onPress={() => {
+                                        onChange(dayValue);
+                                        setIsCalendarOpen(false);
+                                      }}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text
+                                        className={`font-semibold ${
+                                          isSelected
+                                            ? "text-white"
+                                            : isPast
+                                              ? "text-gray-300"
+                                              : "text-gray-800"
+                                        }`}
+                                      >
+                                        {day.getDate()}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <View className="h-10" />
+                                  )}
+                                </View>
+                              );
+                            })}
+                          </View>
+
+                          <View className="flex-row gap-3 mt-5">
+                            <TouchableOpacity
+                              className="flex-1 rounded-2xl py-3.5 items-center bg-gray-100"
+                              onPress={() => setIsCalendarOpen(false)}
+                              activeOpacity={0.85}
+                            >
+                              <Text className="text-gray-700 font-bold">Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              className="flex-1 rounded-2xl py-3.5 items-center bg-orange-500"
+                              onPress={() => {
+                                const dateValue = toDateValue(new Date());
+                                onChange(dateValue);
+                                setVisibleMonth(new Date());
+                                setIsCalendarOpen(false);
+                              }}
+                              activeOpacity={0.85}
+                            >
+                              <Text className="text-white font-bold">Today</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </Modal>
+                  </>
                 )}
               />
               {errors.requestedDate ? (

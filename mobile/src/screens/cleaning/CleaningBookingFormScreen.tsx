@@ -48,7 +48,7 @@ const CleaningBookingFormScreen: React.FC = () => {
       Alert.alert(
         "Booking submitted",
         `Your ${serviceName} booking has been submitted for ${date} at ${timeSlot}.`,
-        [{ text: "OK", onPress: () => navigation.navigate("Cleaning") }],
+        [{ text: "OK", onPress: () => navigation.navigate("MyCleaningBookings") }],
       );
     },
     onError: (error: any) => {

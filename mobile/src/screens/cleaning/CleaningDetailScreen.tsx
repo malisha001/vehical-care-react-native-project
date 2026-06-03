@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -45,15 +52,31 @@ const CleaningDetailScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { id } = route.params;
 
-  const { data: service, isLoading } = useQuery({
+  const {
+    data: service,
+    isLoading,
+    refetch: refetchService,
+    isRefetching: serviceRefetching,
+  } = useQuery({
     queryKey: ["cleaning-service", id],
     queryFn: () => cleaningApi.getById(id).then((r) => r.data.data),
   });
 
-  const { data: slots = [], isLoading: slotsLoading } = useQuery<CleaningSlot[]>({
+  const {
+    data: slots = [],
+    isLoading: slotsLoading,
+    refetch: refetchSlots,
+    isRefetching: slotsRefetching,
+  } = useQuery<CleaningSlot[]>({
     queryKey: ["cleaning-slots-available", id],
     queryFn: () => cleaningSlotApi.getAvailable(id).then((r) => r.data.data),
   });
+
+  const refreshing = serviceRefetching || slotsRefetching;
+  const refreshScreen = () => {
+    refetchService();
+    refetchSlots();
+  };
 
   if (isLoading) {
     return (
@@ -75,7 +98,17 @@ const CleaningDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshScreen}
+            tintColor="#2563eb"
+          />
+        }
+      >
         <View className="bg-primary-900 px-6 pt-8 pb-16">
           <View className="h-16 w-16 rounded-3xl bg-primary-600 items-center justify-center mb-5">
             <Ionicons name="water-outline" size={34} color="#fff" />
@@ -87,6 +120,19 @@ const CleaningDetailScreen: React.FC = () => {
           <Text className="text-white/75 text-sm mt-2 leading-5">
             {service.description}
           </Text>
+          <TouchableOpacity
+            className="bg-white/15 border border-white/20 rounded-2xl px-4 py-3 flex-row items-center justify-between mt-5"
+            onPress={() => navigation.navigate("MyCleaningBookings")}
+            activeOpacity={0.85}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="notifications-outline" size={19} color="#fff" />
+              <Text className="text-white font-semibold ml-2">
+                Cleaning reservations
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View className="mx-4 -mt-10 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-5">

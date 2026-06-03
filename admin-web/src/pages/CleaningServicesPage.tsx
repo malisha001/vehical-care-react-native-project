@@ -12,7 +12,15 @@ import Badge from "../components/ui/Badge";
 const schema = z.object({
   name: z.string().min(2, "Min 2 chars"),
   description: z.string().min(5, "Min 5 chars"),
-  price: z.number().min(0).optional().or(z.literal("")),
+  price: z.preprocess(
+    (value) => {
+      if (value === "" || (typeof value === "number" && Number.isNaN(value))) {
+        return undefined;
+      }
+      return Number(value);
+    },
+    z.number().min(0, "Price cannot be negative").optional(),
+  ),
   duration: z.string().optional(),
   isActive: z.boolean().optional(),
 });
@@ -23,6 +31,7 @@ const CleaningServicesPage: React.FC = () => {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CleaningService | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["cleaning-services"],
@@ -38,6 +47,14 @@ const CleaningServicesPage: React.FC = () => {
     resolver: zodResolver(schema),
   });
 
+  const createMutation = useMutation({
+    mutationFn: (data: Partial<CleaningService>) => cleaningApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cleaning-services"] });
+      closeModal();
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({
       id,
@@ -51,6 +68,26 @@ const CleaningServicesPage: React.FC = () => {
       closeModal();
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => cleaningApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cleaning-services"] });
+      setDeleteId(null);
+    },
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    reset({
+      name: "",
+      description: "",
+      price: undefined,
+      duration: "",
+      isActive: true,
+    });
+    setModalOpen(true);
+  };
 
   const openEdit = (s: CleaningService) => {
     setEditing(s);
@@ -72,10 +109,13 @@ const CleaningServicesPage: React.FC = () => {
   const onSubmit = (data: FormData) => {
     const payload = {
       ...data,
-      price: data.price === "" ? undefined : Number(data.price),
+      price: data.price,
     };
     if (editing) updateMutation.mutate({ id: editing._id, data: payload });
+    else createMutation.mutate(payload);
   };
+
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   const columns = [
     { key: "name", label: "Name" },
@@ -109,12 +149,20 @@ const CleaningServicesPage: React.FC = () => {
       render: (_: unknown, row: unknown) => {
         const s = row as CleaningService;
         return (
-          <button
-            onClick={() => openEdit(s)}
-            className="btn-secondary text-xs px-3 py-1"
-          >
-            Edit Duration
-          </button>
+          <div className="flex gap-1 flex-wrap">
+            <button
+              onClick={() => openEdit(s)}
+              className="btn-secondary text-xs px-2 py-1"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => setDeleteId(s._id)}
+              className="btn-danger text-xs px-2 py-1"
+            >
+              Delete
+            </button>
+          </div>
         );
       },
     },
@@ -123,10 +171,17 @@ const CleaningServicesPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Cleaning Services</h1>
-        <p className="text-sm text-gray-500">
-          Fixed cleaning categories. Update duration, price, and availability here.
-        </p>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Cleaning Services
+          </h1>
+          <p className="text-sm text-gray-500">
+            Add, update, and manage the services shown in the mobile app.
+          </p>
+        </div>
+        <button onClick={openCreate} className="btn-primary">
+          + Add Service
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -141,7 +196,7 @@ const CleaningServicesPage: React.FC = () => {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title="Edit Cleaning Service"
+        title={editing ? "Edit Cleaning Service" : "Add Cleaning Service"}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
@@ -203,10 +258,14 @@ const CleaningServicesPage: React.FC = () => {
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || saving}
               className="btn-primary flex-1"
             >
-              {isSubmitting ? "Saving..." : "Update"}
+              {isSubmitting || saving
+                ? "Saving..."
+                : editing
+                  ? "Update"
+                  : "Create"}
             </button>
             <button
               type="button"
@@ -217,6 +276,33 @@ const CleaningServicesPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        title="Confirm Delete"
+        size="sm"
+      >
+        <p className="text-gray-600 mb-6">
+          Delete this cleaning service? It will no longer appear in the mobile
+          app.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => deleteMutation.mutate(deleteId!)}
+            disabled={deleteMutation.isPending}
+            className="btn-danger flex-1"
+          >
+            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+          </button>
+          <button
+            onClick={() => setDeleteId(null)}
+            className="btn-secondary flex-1"
+          >
+            Cancel
+          </button>
+        </div>
       </Modal>
     </div>
   );

@@ -23,6 +23,7 @@
     },
     "android": {
       "package": "com.vehicleservice.app",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
