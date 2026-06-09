@@ -84,6 +84,22 @@ export const updateBookingStatus = async (
   }
 };
 
+export const updateBookingBill = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const booking = await repairBookingService.updateBookingBill(
+      req.params.id,
+      req.body,
+    );
+    sendSuccess(res, "Repair bill updated", booking);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const respondToProposal = async (
   req: AuthRequest,
   res: Response,

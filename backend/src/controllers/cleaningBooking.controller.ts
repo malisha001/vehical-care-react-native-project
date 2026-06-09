@@ -90,6 +90,22 @@ export const updateBookingStatus = async (
   }
 };
 
+export const updateBookingBill = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const booking = await cleaningBookingService.updateBookingBill(
+      req.params.id,
+      req.body,
+    );
+    sendSuccess(res, "Cleaning bill updated", booking);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getBookingById = async (
   req: AuthRequest,
   res: Response,

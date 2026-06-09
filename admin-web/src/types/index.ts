@@ -75,6 +75,19 @@ export type RepairBookingStatus =
   | "ACCEPTED"
   | "COMPLETED"
   | "CANCELLED";
+export type BillStatus = "DRAFT" | "FINALIZED";
+
+export interface BillItem {
+  description: string;
+  amount: number;
+}
+
+export interface BookingBill {
+  items: BillItem[];
+  total: number;
+  status: BillStatus;
+  finalizedAt?: string;
+}
 
 export interface RepairBooking {
   _id: string;
@@ -92,6 +105,7 @@ export interface RepairBooking {
   issueDescription: string;
   status: RepairBookingStatus;
   adminNotes?: string;
+  bill?: BookingBill;
   createdAt: string;
 }
 
@@ -107,6 +121,7 @@ export interface CleaningBooking {
   notes?: string;
   status: BookingStatus;
   adminNotes?: string;
+  bill?: BookingBill;
   createdAt: string;
 }
 

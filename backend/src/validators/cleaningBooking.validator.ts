@@ -13,9 +13,25 @@ export const updateCleaningBookingStatusSchema = z.object({
   adminNotes: z.string().max(500).optional(),
 });
 
+export const updateCleaningBookingBillSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        description: z.string().min(2, "Item description is required").max(120),
+        amount: z.number().min(0, "Amount cannot be negative"),
+      }),
+    )
+    .max(30)
+    .default([]),
+  finalize: z.boolean().optional(),
+});
+
 export type CreateCleaningBookingInput = z.infer<
   typeof createCleaningBookingSchema
 >;
 export type UpdateCleaningBookingStatusInput = z.infer<
   typeof updateCleaningBookingStatusSchema
+>;
+export type UpdateCleaningBookingBillInput = z.infer<
+  typeof updateCleaningBookingBillSchema
 >;

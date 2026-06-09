@@ -5,8 +5,12 @@ import CleaningService from "../models/CleaningService";
 import { AppError } from "../utils/AppError";
 import {
   CreateCleaningBookingInput,
+  UpdateCleaningBookingBillInput,
   UpdateCleaningBookingStatusInput,
 } from "../validators/cleaningBooking.validator";
+
+const calculateTotal = (items: UpdateCleaningBookingBillInput["items"]) =>
+  items.reduce((sum, item) => sum + item.amount, 0);
 
 export const createBooking = async (
   userId: string,
@@ -51,6 +55,14 @@ export const createBooking = async (
           vehiclePlate: data.vehiclePlate,
           notes: data.notes,
           status: "PENDING",
+          bill: {
+            items:
+              service.price !== undefined
+                ? [{ description: service.name, amount: service.price }]
+                : [],
+            total: service.price || 0,
+            status: "DRAFT",
+          },
         },
       ],
       { session },
@@ -139,6 +151,35 @@ export const updateBookingStatus = async (
       await slot.save();
     }
   }
+  return booking;
+};
+
+export const updateBookingBill = async (
+  id: string,
+  data: UpdateCleaningBookingBillInput,
+) => {
+  const booking = await CleaningBooking.findById(id)
+    .populate("userId", "name email")
+    .populate("serviceId", "name duration price");
+  if (!booking) throw new AppError("Cleaning booking not found", 404);
+
+  if (booking.bill?.status === "FINALIZED") {
+    throw new AppError("Finalized bills cannot be changed", 400);
+  }
+
+  const items = data.items.map((item) => ({
+    description: item.description,
+    amount: item.amount,
+  }));
+
+  booking.bill = {
+    items,
+    total: calculateTotal(items),
+    status: data.finalize ? "FINALIZED" : "DRAFT",
+    finalizedAt: data.finalize ? new Date() : undefined,
+  };
+
+  await booking.save();
   return booking;
 };
 

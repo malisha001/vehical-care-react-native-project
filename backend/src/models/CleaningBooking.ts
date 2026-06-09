@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { BookingStatus } from "./RepairBooking";
+import { BookingStatus, IBookingBill } from "./RepairBooking";
 
 export interface ICleaningBooking extends Document {
   userId: mongoose.Types.ObjectId;
@@ -12,9 +12,33 @@ export interface ICleaningBooking extends Document {
   notes?: string;
   status: BookingStatus;
   adminNotes?: string;
+  bill: IBookingBill;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const BillItemSchema = new Schema(
+  {
+    description: { type: String, required: true, trim: true, maxlength: 120 },
+    amount: { type: Number, required: true, min: 0 },
+  },
+  { _id: false },
+);
+
+const BillSchema = new Schema(
+  {
+    items: { type: [BillItemSchema], default: [] },
+    total: { type: Number, default: 0, min: 0 },
+    status: {
+      type: String,
+      enum: ["DRAFT", "FINALIZED"],
+      default: "DRAFT",
+      index: true,
+    },
+    finalizedAt: { type: Date },
+  },
+  { _id: false },
+);
 
 const CleaningBookingSchema = new Schema<ICleaningBooking>(
   {
@@ -43,6 +67,7 @@ const CleaningBookingSchema = new Schema<ICleaningBooking>(
       index: true,
     },
     adminNotes: { type: String, trim: true },
+    bill: { type: BillSchema, default: () => ({}) },
   },
   { timestamps: true },
 );

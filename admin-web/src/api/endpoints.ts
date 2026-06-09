@@ -1,6 +1,7 @@
 import api from "./axios";
 import {
   AuthTokens,
+  BillItem,
   CleaningBooking,
   CleaningService,
   CleaningSlot,
@@ -68,6 +69,14 @@ export const cleaningBookingApi = {
       `/cleaning-bookings/${id}/status`,
       data,
     ),
+  updateBill: (
+    id: string,
+    data: { items: BillItem[]; finalize?: boolean },
+  ) =>
+    api.patch<ApiResponse<CleaningBooking>>(
+      `/cleaning-bookings/${id}/bill`,
+      data,
+    ),
 };
 
 // Modification Items
@@ -128,6 +137,11 @@ export const repairBookingApi = {
       `/repair-bookings/${id}/status`,
       data,
     ),
+  updateBill: (
+    id: string,
+    data: { items: BillItem[]; finalize?: boolean },
+  ) =>
+    api.patch<ApiResponse<RepairBooking>>(`/repair-bookings/${id}/bill`, data),
 };
 
 // Carrier Requests

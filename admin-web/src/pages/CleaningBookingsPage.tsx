@@ -4,7 +4,12 @@ import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { cleaningApi, cleaningBookingApi } from "../api/endpoints";
-import { BookingStatus, CleaningBooking, CleaningService } from "../types";
+import {
+  BillItem,
+  BookingStatus,
+  CleaningBooking,
+  CleaningService,
+} from "../types";
 import Modal from "../components/ui/Modal";
 import Table from "../components/ui/Table";
 import { statusBadge } from "../components/ui/Badge";
@@ -15,6 +20,10 @@ const STATUSES: BookingStatus[] = [
   "COMPLETED",
   "CANCELLED",
 ];
+
+const formatCurrency = (amount: number) => `LKR ${amount.toLocaleString()}`;
+
+const emptyBillItem = (): BillItem => ({ description: "", amount: 0 });
 
 const CleaningBookingsPage: React.FC = () => {
   const qc = useQueryClient();
@@ -28,6 +37,10 @@ const CleaningBookingsPage: React.FC = () => {
     booking: CleaningBooking;
     status: BookingStatus;
     notes: string;
+  } | null>(null);
+  const [billModal, setBillModal] = useState<{
+    booking: CleaningBooking;
+    items: BillItem[];
   } | null>(null);
 
   const { data: services = [] } = useQuery({
@@ -81,6 +94,22 @@ const CleaningBookingsPage: React.FC = () => {
     },
   });
 
+  const billMutation = useMutation({
+    mutationFn: ({
+      id,
+      items,
+      finalize,
+    }: {
+      id: string;
+      items: BillItem[];
+      finalize?: boolean;
+    }) => cleaningBookingApi.updateBill(id, { items, finalize }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cleaning-bookings"] });
+      setBillModal(null);
+    },
+  });
+
   const serviceName = (serviceId: CleaningBooking["serviceId"]) => {
     if (typeof serviceId === "object") return serviceId.name;
     return services.find((s: CleaningService) => s._id === serviceId)?.name || "-";
@@ -93,6 +122,56 @@ const CleaningBookingsPage: React.FC = () => {
 
   const vehicleText = (booking: CleaningBooking) =>
     `${booking.vehicleModel || ""} ${booking.vehiclePlate || ""}`.trim() || "-";
+
+  const openBillModal = (booking: CleaningBooking) => {
+    const fallbackItems =
+      typeof booking.serviceId === "object" && booking.serviceId.price !== undefined
+        ? [{ description: booking.serviceId.name, amount: booking.serviceId.price }]
+        : [emptyBillItem()];
+    setBillModal({
+      booking,
+      items: booking.bill?.items?.length ? booking.bill.items : fallbackItems,
+    });
+  };
+
+  const updateBillItem = (
+    index: number,
+    field: keyof BillItem,
+    value: string,
+  ) => {
+    setBillModal((current) => {
+      if (!current) return null;
+      const items = current.items.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === "amount" ? Number(value) || 0 : value,
+            }
+          : item,
+      );
+      return { ...current, items };
+    });
+  };
+
+  const removeBillItem = (index: number) => {
+    setBillModal((current) => {
+      if (!current) return null;
+      const items = current.items.filter((_, itemIndex) => itemIndex !== index);
+      return { ...current, items: items.length ? items : [emptyBillItem()] };
+    });
+  };
+
+  const cleanBillItems = (items: BillItem[]) =>
+    items
+      .map((item) => ({
+        description: item.description.trim(),
+        amount: item.amount,
+      }))
+      .filter((item) => item.description && item.amount >= 0);
+
+  const billTotal = billModal
+    ? cleanBillItems(billModal.items).reduce((sum, item) => sum + item.amount, 0)
+    : 0;
 
   const generatePdfReport = async () => {
     try {
@@ -224,23 +303,41 @@ const CleaningBookingsPage: React.FC = () => {
       render: (v: unknown) => statusBadge(v as string),
     },
     {
+      key: "bill",
+      label: "Bill",
+      render: (v: unknown) => {
+        const bill = v as CleaningBooking["bill"];
+        return bill?.status === "FINALIZED"
+          ? formatCurrency(bill.total)
+          : "Draft";
+      },
+    },
+    {
       key: "_id",
       label: "Actions",
       render: (_: unknown, row: unknown) => {
         const booking = row as CleaningBooking;
         return (
-          <button
-            onClick={() =>
-              setStatusModal({
-                booking,
-                status: booking.status,
-                notes: booking.adminNotes || "",
-              })
-            }
-            className="btn-secondary text-xs px-3 py-1"
-          >
-            Update
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                setStatusModal({
+                  booking,
+                  status: booking.status,
+                  notes: booking.adminNotes || "",
+                })
+              }
+              className="btn-secondary text-xs px-3 py-1"
+            >
+              Update
+            </button>
+            <button
+              onClick={() => openBillModal(booking)}
+              className="btn-primary text-xs px-3 py-1"
+            >
+              Bill
+            </button>
+          </div>
         );
       },
     },
@@ -425,6 +522,121 @@ const CleaningBookingsPage: React.FC = () => {
                 className="btn-secondary flex-1"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={!!billModal}
+        onClose={() => setBillModal(null)}
+        title="Cleaning Bill"
+        size="lg"
+      >
+        {billModal && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+              <p>
+                <strong>Customer:</strong> {userName(billModal.booking.userId)}
+              </p>
+              <p className="mt-1">
+                <strong>Service:</strong> {serviceName(billModal.booking.serviceId)}
+              </p>
+              <p className="mt-1">
+                <strong>Bill status:</strong>{" "}
+                {billModal.booking.bill?.status || "DRAFT"}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {billModal.items.map((item, index) => (
+                <div key={index} className="grid grid-cols-[1fr_140px_auto] gap-2">
+                  <input
+                    value={item.description}
+                    onChange={(e) =>
+                      updateBillItem(index, "description", e.target.value)
+                    }
+                    className="input"
+                    placeholder="Service or extra"
+                    disabled={billModal.booking.bill?.status === "FINALIZED"}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={item.amount}
+                    onChange={(e) =>
+                      updateBillItem(index, "amount", e.target.value)
+                    }
+                    className="input"
+                    placeholder="Amount"
+                    disabled={billModal.booking.bill?.status === "FINALIZED"}
+                  />
+                  <button
+                    onClick={() => removeBillItem(index)}
+                    className="btn-secondary px-3"
+                    disabled={billModal.booking.bill?.status === "FINALIZED"}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setBillModal((current) =>
+                  current
+                    ? { ...current, items: [...current.items, emptyBillItem()] }
+                    : null,
+                )
+              }
+              className="btn-secondary"
+              disabled={billModal.booking.bill?.status === "FINALIZED"}
+            >
+              Add Service
+            </button>
+
+            <div className="flex items-center justify-between border-t pt-4">
+              <span className="text-sm font-semibold text-gray-600">
+                Final total
+              </span>
+              <span className="text-xl font-bold text-gray-950">
+                {formatCurrency(billTotal)}
+              </span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  billMutation.mutate({
+                    id: billModal.booking._id,
+                    items: cleanBillItems(billModal.items),
+                  })
+                }
+                disabled={
+                  billMutation.isPending ||
+                  billModal.booking.bill?.status === "FINALIZED"
+                }
+                className="btn-secondary flex-1"
+              >
+                Save Draft
+              </button>
+              <button
+                onClick={() =>
+                  billMutation.mutate({
+                    id: billModal.booking._id,
+                    items: cleanBillItems(billModal.items),
+                    finalize: true,
+                  })
+                }
+                disabled={
+                  billMutation.isPending ||
+                  billModal.booking.bill?.status === "FINALIZED"
+                }
+                className="btn-primary flex-1"
+              >
+                {billMutation.isPending ? "Saving..." : "Finalize Bill"}
               </button>
             </div>
           </div>
