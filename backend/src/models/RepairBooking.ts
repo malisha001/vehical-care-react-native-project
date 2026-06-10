@@ -23,9 +23,25 @@ export interface IRepairBooking extends Document {
   issueDescription: string;
   status: RepairBookingStatus;
   adminNotes?: string;
+  billStatus: "DRAFT" | "FINALIZED";
+  baseServicePrice: number;
+  billItems: {
+    description: string;
+    price: number;
+  }[];
+  billTotal: number;
+  billFinalizedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const RepairBillItemSchema = new Schema(
+  {
+    description: { type: String, required: true, trim: true },
+    price: { type: Number, required: true, min: 0 },
+  },
+  { _id: false },
+);
 
 const RepairBookingSchema = new Schema<IRepairBooking>(
   {
@@ -53,6 +69,16 @@ const RepairBookingSchema = new Schema<IRepairBooking>(
       index: true,
     },
     adminNotes: { type: String, trim: true },
+    billStatus: {
+      type: String,
+      enum: ["DRAFT", "FINALIZED"],
+      default: "DRAFT",
+      index: true,
+    },
+    baseServicePrice: { type: Number, min: 0, default: 0 },
+    billItems: { type: [RepairBillItemSchema], default: [] },
+    billTotal: { type: Number, min: 0, default: 0 },
+    billFinalizedAt: { type: Date },
   },
   { timestamps: true },
 );

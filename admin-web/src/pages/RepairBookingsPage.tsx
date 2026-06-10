@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { repairBookingApi } from "../api/endpoints";
-import { RepairBooking, RepairBookingStatus } from "../types";
+import { BillItem, RepairBooking, RepairBookingStatus } from "../types";
 import Modal from "../components/ui/Modal";
 import Table from "../components/ui/Table";
 import { statusBadge } from "../components/ui/Badge";
@@ -17,6 +18,7 @@ const STATUSES: RepairBookingStatus[] = [
 
 const RepairBookingsPage: React.FC = () => {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -26,6 +28,8 @@ const RepairBookingsPage: React.FC = () => {
     scheduledDate: string;
     estimatedDays: number;
     notes: string;
+    baseServicePrice: string;
+    billItems: { description: string; price: string }[];
   } | null>(null);
 
   const { data: res, isLoading } = useQuery({
@@ -62,6 +66,66 @@ const RepairBookingsPage: React.FC = () => {
       setStatusModal(null);
     },
   });
+
+  const billMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        billStatus: "DRAFT" | "FINALIZED";
+        baseServicePrice: number;
+        billItems: BillItem[];
+      };
+      openBillAfterSave?: boolean;
+    }) => repairBookingApi.updateBill(id, data),
+    onSuccess: (response, variables) => {
+      qc.invalidateQueries({ queryKey: ["repair-bookings"] });
+      setStatusModal(null);
+      if (variables.openBillAfterSave) {
+        navigate(`/repair-bookings/${response.data.data._id}/bill`);
+      }
+    },
+  });
+
+  const formatMoney = (value?: number) =>
+    `LKR ${(value ?? 0).toLocaleString("en-LK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const modalBillItems = (statusModal?.billItems ?? []).map((item) => ({
+    description: item.description.trim(),
+    price: Number(item.price) || 0,
+  }));
+  const modalBasePrice = Number(statusModal?.baseServicePrice) || 0;
+  const modalBillTotal =
+    modalBasePrice +
+    modalBillItems.reduce((total, item) => total + item.price, 0);
+
+  const saveBill = (
+    billStatus: "DRAFT" | "FINALIZED",
+    openBillAfterSave = false,
+  ) => {
+    if (!statusModal) return;
+    const billItems = modalBillItems.filter(
+      (item) => item.description && item.price >= 0,
+    );
+    if (billItems.length !== modalBillItems.length) {
+      window.alert("Please add a description for every bill item.");
+      return;
+    }
+    billMutation.mutate({
+      id: statusModal.booking._id,
+      data: {
+        billStatus,
+        baseServicePrice: modalBasePrice,
+        billItems,
+      },
+      openBillAfterSave,
+    });
+  };
 
   const columns = [
     {
@@ -109,6 +173,23 @@ const RepairBookingsPage: React.FC = () => {
       render: (v: unknown) => statusBadge(v as string),
     },
     {
+      key: "billTotal",
+      label: "Bill",
+      render: (_: unknown, row: unknown) => {
+        const booking = row as RepairBooking;
+        return (
+          <div>
+            <p className="text-sm font-semibold text-gray-900">
+              {formatMoney(booking.billTotal)}
+            </p>
+            <p className="text-xs text-gray-500">
+              {booking.billStatus === "FINALIZED" ? "Finalized" : "Draft"}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
       key: "_id",
       label: "Actions",
       render: (_: unknown, row: unknown) => {
@@ -125,6 +206,11 @@ const RepairBookingsPage: React.FC = () => {
                 scheduledDate: booking.scheduledDate || booking.requestedDate,
                 estimatedDays: booking.estimatedDays || 1,
                 notes: booking.adminNotes || "",
+                baseServicePrice: String(booking.baseServicePrice ?? 0),
+                billItems: (booking.billItems || []).map((item) => ({
+                  description: item.description,
+                  price: String(item.price),
+                })),
               })
             }
             className="btn-secondary text-xs px-3 py-1"
@@ -210,6 +296,7 @@ const RepairBookingsPage: React.FC = () => {
         isOpen={!!statusModal}
         onClose={() => setStatusModal(null)}
         title="Review Repair Request"
+        size="lg"
       >
         {statusModal && (
           <div className="space-y-4">
@@ -293,6 +380,159 @@ const RepairBookingsPage: React.FC = () => {
                 className="input"
                 placeholder="Explain the date change or repair duration..."
               />
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    Billing
+                  </h4>
+                  <p className="text-xs text-gray-500">
+                    Add labor, parts, or extra repair services, then finalize the bill.
+                  </p>
+                </div>
+                <span className="badge bg-gray-100 text-gray-700">
+                  {statusModal.booking.billStatus === "FINALIZED"
+                    ? "Finalized"
+                    : "Draft"}
+                </span>
+              </div>
+              <label className="label">Base Repair / Labor Charge</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={statusModal.baseServicePrice}
+                onChange={(e) =>
+                  setStatusModal((p) =>
+                    p ? { ...p, baseServicePrice: e.target.value } : null,
+                  )
+                }
+                className="input mb-3"
+              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="label mb-0">Parts and Extra Services</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStatusModal((p) =>
+                        p
+                          ? {
+                              ...p,
+                              billItems: [
+                                ...p.billItems,
+                                { description: "", price: "0" },
+                              ],
+                            }
+                          : null,
+                      )
+                    }
+                    className="btn-secondary px-3 py-1 text-xs"
+                  >
+                    Add Item
+                  </button>
+                </div>
+                {statusModal.billItems.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500">
+                    No repair parts or extra services added yet.
+                  </p>
+                ) : (
+                  statusModal.billItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_120px_auto] gap-2">
+                      <input
+                        value={item.description}
+                        onChange={(e) =>
+                          setStatusModal((p) =>
+                            p
+                              ? {
+                                  ...p,
+                                  billItems: p.billItems.map((billItem, i) =>
+                                    i === index
+                                      ? {
+                                          ...billItem,
+                                          description: e.target.value,
+                                        }
+                                      : billItem,
+                                  ),
+                                }
+                              : null,
+                          )
+                        }
+                        className="input"
+                        placeholder="Part or service name"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) =>
+                          setStatusModal((p) =>
+                            p
+                              ? {
+                                  ...p,
+                                  billItems: p.billItems.map((billItem, i) =>
+                                    i === index
+                                      ? { ...billItem, price: e.target.value }
+                                      : billItem,
+                                  ),
+                                }
+                              : null,
+                          )
+                        }
+                        className="input"
+                        placeholder="Price"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStatusModal((p) =>
+                            p
+                              ? {
+                                  ...p,
+                                  billItems: p.billItems.filter(
+                                    (_, i) => i !== index,
+                                  ),
+                                }
+                              : null,
+                          )
+                        }
+                        className="btn-danger px-3 py-2"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-4 rounded-lg bg-gray-50 px-4 py-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-gray-600">Final Total</span>
+                  <span className="text-lg font-bold text-gray-950">
+                    {formatMoney(modalBillTotal)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => saveBill("DRAFT")}
+                  disabled={billMutation.isPending}
+                  className="btn-secondary"
+                >
+                  {billMutation.isPending ? "Saving..." : "Save Draft Bill"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveBill("FINALIZED", true)}
+                  disabled={billMutation.isPending}
+                  className="btn-success"
+                >
+                  {billMutation.isPending ? "Finalizing..." : "Finalize Bill"}
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-3">

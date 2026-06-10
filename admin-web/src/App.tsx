@@ -13,6 +13,7 @@ import CleaningBillPage from "./pages/CleaningBillPage";
 import ModificationItemsPage from "./pages/ModificationItemsPage";
 import RepairSlotsPage from "./pages/RepairSlotsPage";
 import RepairBookingsPage from "./pages/RepairBookingsPage";
+import RepairBillPage from "./pages/RepairBillPage";
 import CarrierRequestsPage from "./pages/CarrierRequestsPage";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -52,6 +53,7 @@ const App: React.FC = () => {
           />
           <Route path="repair-slots" element={<RepairSlotsPage />} />
           <Route path="repair-bookings" element={<RepairBookingsPage />} />
+          <Route path="repair-bookings/:id/bill" element={<RepairBillPage />} />
           <Route path="carrier-requests" element={<CarrierRequestsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

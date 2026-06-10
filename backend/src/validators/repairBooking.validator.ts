@@ -33,6 +33,19 @@ export const userRepairDecisionSchema = z.object({
   decision: z.enum(["ACCEPT", "CANCEL"]),
 });
 
+export const updateRepairBookingBillSchema = z.object({
+  billStatus: z.enum(["DRAFT", "FINALIZED"]).optional(),
+  baseServicePrice: z.number().min(0).optional(),
+  billItems: z
+    .array(
+      z.object({
+        description: z.string().min(1, "Description is required").max(120),
+        price: z.number().min(0),
+      }),
+    )
+    .optional(),
+});
+
 export type CreateRepairBookingInput = z.infer<
   typeof createRepairBookingSchema
 >;
@@ -40,3 +53,6 @@ export type UpdateBookingStatusInput = z.infer<
   typeof updateBookingStatusSchema
 >;
 export type UserRepairDecisionInput = z.infer<typeof userRepairDecisionSchema>;
+export type UpdateRepairBookingBillInput = z.infer<
+  typeof updateRepairBookingBillSchema
+>;

@@ -93,6 +93,11 @@ export interface RepairBooking {
   issueDescription: string;
   status: RepairBookingStatus;
   adminNotes?: string;
+  billStatus?: "DRAFT" | "FINALIZED";
+  baseServicePrice?: number;
+  billItems?: BillItem[];
+  billTotal?: number;
+  billFinalizedAt?: string;
   createdAt: string;
 }
 

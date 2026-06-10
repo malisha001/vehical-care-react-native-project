@@ -101,6 +101,22 @@ export const respondToProposal = async (
   }
 };
 
+export const updateBookingBill = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const booking = await repairBookingService.updateBookingBill(
+      req.params.id,
+      req.body,
+    );
+    sendSuccess(res, "Repair booking bill updated", booking);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getBookingById = async (
   req: AuthRequest,
   res: Response,

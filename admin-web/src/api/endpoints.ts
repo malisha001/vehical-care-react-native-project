@@ -141,6 +141,8 @@ export const repairBookingApi = {
     status?: string;
     date?: string;
   }) => api.get<ApiResponse<RepairBooking[]>>("/repair-bookings", { params }),
+  getById: (id: string) =>
+    api.get<ApiResponse<RepairBooking>>(`/repair-bookings/${id}`),
   updateStatus: (
     id: string,
     data: {
@@ -152,6 +154,18 @@ export const repairBookingApi = {
   ) =>
     api.patch<ApiResponse<RepairBooking>>(
       `/repair-bookings/${id}/status`,
+      data,
+    ),
+  updateBill: (
+    id: string,
+    data: {
+      billStatus?: "DRAFT" | "FINALIZED";
+      baseServicePrice?: number;
+      billItems?: { description: string; price: number }[];
+    },
+  ) =>
+    api.patch<ApiResponse<RepairBooking>>(
+      `/repair-bookings/${id}/bill`,
       data,
     ),
 };
