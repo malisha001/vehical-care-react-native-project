@@ -68,6 +68,18 @@ export const cleaningBookingApi = {
       `/cleaning-bookings/${id}/status`,
       data,
     ),
+  updateBill: (
+    id: string,
+    data: {
+      billStatus?: "DRAFT" | "FINALIZED";
+      baseServicePrice?: number;
+      billItems?: { description: string; price: number }[];
+    },
+  ) =>
+    api.patch<ApiResponse<CleaningBooking>>(
+      `/cleaning-bookings/${id}/bill`,
+      data,
+    ),
 };
 
 // Modification Items

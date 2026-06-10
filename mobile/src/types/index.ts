@@ -91,7 +91,17 @@ export interface CleaningBooking {
   notes?: string;
   status: BookingStatus;
   adminNotes?: string;
+  billStatus?: "DRAFT" | "FINALIZED";
+  baseServicePrice?: number;
+  billItems?: BillItem[];
+  billTotal?: number;
+  billFinalizedAt?: string;
   createdAt: string;
+}
+
+export interface BillItem {
+  description: string;
+  price: number;
 }
 
 export type CarrierStatus =

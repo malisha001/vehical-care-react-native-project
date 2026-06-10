@@ -38,6 +38,12 @@ const servicePrice = (serviceId: CleaningBooking["serviceId"]) => {
   return undefined;
 };
 
+const formatMoney = (value?: number) =>
+  `LKR ${(value ?? 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
 const MyCleaningBookingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
@@ -55,6 +61,9 @@ const MyCleaningBookingsScreen: React.FC = () => {
     const status = STATUS_STYLES[item.status] || STATUS_STYLES.PENDING;
     const duration = serviceDuration(item.serviceId);
     const price = servicePrice(item.serviceId);
+    const showFinalBill = item.billStatus === "FINALIZED";
+    const baseServicePrice = item.baseServicePrice ?? price ?? 0;
+    const billItems = item.billItems || [];
 
     return (
       <View className="bg-white border border-gray-100 rounded-3xl p-4 mb-3 mx-4 shadow-sm">
@@ -99,6 +108,42 @@ const MyCleaningBookingsScreen: React.FC = () => {
               Admin note
             </Text>
             <Text className="text-blue-700 text-sm">{item.adminNotes}</Text>
+          </View>
+        ) : null}
+
+        {showFinalBill ? (
+          <View className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-3 mt-3">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-emerald-700 text-xs font-bold">
+                Final bill
+              </Text>
+              <Text className="text-emerald-900 text-base font-extrabold">
+                {formatMoney(item.billTotal)}
+              </Text>
+            </View>
+            <View className="flex-row justify-between py-1">
+              <Text className="text-emerald-800 text-sm flex-1 mr-3">
+                {serviceName(item.serviceId)}
+              </Text>
+              <Text className="text-emerald-900 text-sm font-semibold">
+                {formatMoney(baseServicePrice)}
+              </Text>
+            </View>
+            {billItems.map((billItem, index) => (
+              <View key={`${billItem.description}-${index}`} className="flex-row justify-between py-1">
+                <Text className="text-emerald-800 text-sm flex-1 mr-3">
+                  {billItem.description}
+                </Text>
+                <Text className="text-emerald-900 text-sm font-semibold">
+                  {formatMoney(billItem.price)}
+                </Text>
+              </View>
+            ))}
+            {item.billFinalizedAt ? (
+              <Text className="text-emerald-700 text-xs mt-2">
+                Finalized on {new Date(item.billFinalizedAt).toLocaleDateString()}
+              </Text>
+            ) : null}
           </View>
         ) : null}
       </View>
