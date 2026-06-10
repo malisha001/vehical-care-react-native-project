@@ -1,6 +1,8 @@
 import api from "./axios";
 import {
   AuthTokens,
+  User,
+  UserDetails,
   CleaningBooking,
   CleaningService,
   CleaningSlot,
@@ -23,6 +25,16 @@ export const authApi = {
 export const dashboardApi = {
   getMetrics: () =>
     api.get<ApiResponse<DashboardMetrics>>("/dashboard/metrics"),
+};
+
+export const userApi = {
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+  }) => api.get<ApiResponse<User[]>>("/users", { params }),
+  getById: (id: string) => api.get<ApiResponse<UserDetails>>(`/users/${id}`),
 };
 
 // Cleaning Services
@@ -63,6 +75,8 @@ export const cleaningBookingApi = {
     toDate?: string;
     serviceId?: string;
   }) => api.get<ApiResponse<CleaningBooking[]>>("/cleaning-bookings", { params }),
+  getById: (id: string) =>
+    api.get<ApiResponse<CleaningBooking>>(`/cleaning-bookings/${id}`),
   updateStatus: (id: string, data: { status: string; adminNotes?: string }) =>
     api.patch<ApiResponse<CleaningBooking>>(
       `/cleaning-bookings/${id}/status`,

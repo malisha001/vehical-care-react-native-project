@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useNavigate } from "react-router-dom";
 import { cleaningApi, cleaningBookingApi } from "../api/endpoints";
 import {
   BillItem,
@@ -23,6 +24,7 @@ const STATUSES: BookingStatus[] = [
 
 const CleaningBookingsPage: React.FC = () => {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
   const [fromDateFilter, setFromDateFilter] = useState("");
   const [toDateFilter, setToDateFilter] = useState("");
@@ -99,10 +101,14 @@ const CleaningBookingsPage: React.FC = () => {
         baseServicePrice: number;
         billItems: BillItem[];
       };
+      openBillAfterSave?: boolean;
     }) => cleaningBookingApi.updateBill(id, data),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
       qc.invalidateQueries({ queryKey: ["cleaning-bookings"] });
       setStatusModal(null);
+      if (variables.openBillAfterSave) {
+        navigate(`/cleaning-bookings/${response.data.data._id}/bill`);
+      }
     },
   });
 
@@ -139,7 +145,10 @@ const CleaningBookingsPage: React.FC = () => {
     modalBasePrice +
     modalBillItems.reduce((total, item) => total + item.price, 0);
 
-  const saveBill = (billStatus: "DRAFT" | "FINALIZED") => {
+  const saveBill = (
+    billStatus: "DRAFT" | "FINALIZED",
+    openBillAfterSave = false,
+  ) => {
     if (!statusModal) return;
     const billItems = modalBillItems.filter(
       (item) => item.description && item.price >= 0,
@@ -155,6 +164,7 @@ const CleaningBookingsPage: React.FC = () => {
         baseServicePrice: modalBasePrice,
         billItems,
       },
+      openBillAfterSave,
     });
   };
 
@@ -642,7 +652,7 @@ const CleaningBookingsPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => saveBill("FINALIZED")}
+                  onClick={() => saveBill("FINALIZED", true)}
                   disabled={billMutation.isPending}
                   className="btn-success"
                 >

@@ -16,6 +16,7 @@ export interface User {
   role: "USER" | "ADMIN";
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AuthTokens {
@@ -150,4 +151,16 @@ export interface DashboardMetrics {
     completed: number;
   };
   carrier: { total: number; active: number };
+}
+
+export interface UserDetails {
+  user: User;
+  stats: {
+    cleaningBookings: number;
+    repairBookings: number;
+    carrierRequests: number;
+  };
+  recentCleaningBookings: CleaningBooking[];
+  recentRepairBookings: RepairBooking[];
+  recentCarrierRequests: CarrierRequest[];
 }

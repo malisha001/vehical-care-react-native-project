@@ -4,9 +4,12 @@ import { useAuthStore } from "./store/authStore";
 import AdminLayout from "./components/layout/AdminLayout";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import UsersPage from "./pages/UsersPage";
+import UserDetailsPage from "./pages/UserDetailsPage";
 import CleaningServicesPage from "./pages/CleaningServicesPage";
 import CleaningSlotsPage from "./pages/CleaningSlotsPage";
 import CleaningBookingsPage from "./pages/CleaningBookingsPage";
+import CleaningBillPage from "./pages/CleaningBillPage";
 import ModificationItemsPage from "./pages/ModificationItemsPage";
 import RepairSlotsPage from "./pages/RepairSlotsPage";
 import RepairBookingsPage from "./pages/RepairBookingsPage";
@@ -37,9 +40,12 @@ const App: React.FC = () => {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="users/:id" element={<UserDetailsPage />} />
           <Route path="cleaning-services" element={<CleaningServicesPage />} />
           <Route path="cleaning-slots" element={<CleaningSlotsPage />} />
           <Route path="cleaning-bookings" element={<CleaningBookingsPage />} />
+          <Route path="cleaning-bookings/:id/bill" element={<CleaningBillPage />} />
           <Route
             path="modification-items"
             element={<ModificationItemsPage />}

@@ -24,6 +24,7 @@ import repairSlotRoutes from "./routes/repairSlot.routes";
 import repairBookingRoutes from "./routes/repairBooking.routes";
 import carrierRequestRoutes from "./routes/carrierRequest.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import userRoutes from "./routes/user.routes";
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use("/api/repair-slots", repairSlotRoutes);
 app.use("/api/repair-bookings", repairBookingRoutes);
 app.use("/api/carrier-requests", carrierRequestRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 // ─── Health Check ──────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

@@ -5,6 +5,7 @@ import { authApi } from "../../api/endpoints";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: "DB" },
+  { label: "Users", path: "/users", icon: "US" },
   { label: "Cleaning Services", path: "/cleaning-services", icon: "CS" },
   { label: "Cleaning Slots", path: "/cleaning-slots", icon: "CL" },
   { label: "Cleaning Bookings", path: "/cleaning-bookings", icon: "CB" },
