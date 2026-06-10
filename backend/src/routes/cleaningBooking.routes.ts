@@ -5,7 +5,6 @@ import { authenticate } from "../middlewares/auth.middleware";
 import { requireAdmin, requireUser } from "../middlewares/role.middleware";
 import {
   createCleaningBookingSchema,
-  updateCleaningBookingBillSchema,
   updateCleaningBookingStatusSchema,
 } from "../validators/cleaningBooking.validator";
 
@@ -41,14 +40,6 @@ router.patch(
   requireAdmin,
   validate(updateCleaningBookingStatusSchema),
   cleaningBookingController.updateBookingStatus,
-);
-
-router.patch(
-  "/:id/bill",
-  authenticate,
-  requireAdmin,
-  validate(updateCleaningBookingBillSchema),
-  cleaningBookingController.updateBookingBill,
 );
 
 export default router;

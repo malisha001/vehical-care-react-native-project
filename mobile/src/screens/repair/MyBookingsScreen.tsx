@@ -31,8 +31,6 @@ const STATUS_STYLES: Record<
   CANCELLED: { tone: "red", label: "Cancelled" },
 };
 
-const formatCurrency = (amount: number) => `LKR ${amount.toLocaleString()}`;
-
 const MyBookingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const qc = useQueryClient();
@@ -144,32 +142,6 @@ const MyBookingsScreen: React.FC = () => {
               Admin note
             </Text>
             <Text className="text-blue-700 text-sm">{item.adminNotes}</Text>
-          </View>
-        ) : null}
-
-        {item.bill?.status === "FINALIZED" ? (
-          <View className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-3 mt-3">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-emerald-700 text-xs font-bold">
-                Final bill
-              </Text>
-              <Text className="text-emerald-900 text-base font-extrabold">
-                {formatCurrency(item.bill.total)}
-              </Text>
-            </View>
-            {item.bill.items.map((billItem, index) => (
-              <View
-                key={`${billItem.description}-${index}`}
-                className="flex-row justify-between py-1"
-              >
-                <Text className="text-emerald-800 text-sm flex-1 mr-3">
-                  {billItem.description}
-                </Text>
-                <Text className="text-emerald-900 text-sm font-semibold">
-                  {formatCurrency(billItem.amount)}
-                </Text>
-              </View>
-            ))}
           </View>
         ) : null}
 

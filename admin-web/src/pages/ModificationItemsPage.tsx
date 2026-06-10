@@ -27,6 +27,7 @@ const DEFAULT_MOD_CATEGORIES = [
   "Body Kit",
   "Suspension",
   "Engine",
+  "Interior",
 ];
 
 const ModificationItemsPage: React.FC = () => {

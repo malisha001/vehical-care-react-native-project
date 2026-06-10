@@ -7,19 +7,6 @@ export type RepairBookingStatus =
   | "ACCEPTED"
   | "COMPLETED"
   | "CANCELLED";
-export type BillStatus = "DRAFT" | "FINALIZED";
-
-export interface IBillItem {
-  description: string;
-  amount: number;
-}
-
-export interface IBookingBill {
-  items: IBillItem[];
-  total: number;
-  status: BillStatus;
-  finalizedAt?: Date;
-}
 
 export interface IRepairBooking extends Document {
   userId: mongoose.Types.ObjectId;
@@ -36,33 +23,9 @@ export interface IRepairBooking extends Document {
   issueDescription: string;
   status: RepairBookingStatus;
   adminNotes?: string;
-  bill: IBookingBill;
   createdAt: Date;
   updatedAt: Date;
 }
-
-const BillItemSchema = new Schema<IBillItem>(
-  {
-    description: { type: String, required: true, trim: true, maxlength: 120 },
-    amount: { type: Number, required: true, min: 0 },
-  },
-  { _id: false },
-);
-
-const BillSchema = new Schema<IBookingBill>(
-  {
-    items: { type: [BillItemSchema], default: [] },
-    total: { type: Number, default: 0, min: 0 },
-    status: {
-      type: String,
-      enum: ["DRAFT", "FINALIZED"],
-      default: "DRAFT",
-      index: true,
-    },
-    finalizedAt: { type: Date },
-  },
-  { _id: false },
-);
 
 const RepairBookingSchema = new Schema<IRepairBooking>(
   {
@@ -90,7 +53,6 @@ const RepairBookingSchema = new Schema<IRepairBooking>(
       index: true,
     },
     adminNotes: { type: String, trim: true },
-    bill: { type: BillSchema, default: () => ({}) },
   },
   { timestamps: true },
 );

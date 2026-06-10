@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { repairBookingApi } from "../api/endpoints";
-import { BillItem, RepairBooking, RepairBookingStatus } from "../types";
+import { RepairBooking, RepairBookingStatus } from "../types";
 import Modal from "../components/ui/Modal";
 import Table from "../components/ui/Table";
 import { statusBadge } from "../components/ui/Badge";
@@ -15,10 +15,6 @@ const STATUSES: RepairBookingStatus[] = [
   "CANCELLED",
 ];
 
-const formatCurrency = (amount: number) => `LKR ${amount.toLocaleString()}`;
-
-const emptyBillItem = (): BillItem => ({ description: "", amount: 0 });
-
 const RepairBookingsPage: React.FC = () => {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
@@ -30,10 +26,6 @@ const RepairBookingsPage: React.FC = () => {
     scheduledDate: string;
     estimatedDays: number;
     notes: string;
-  } | null>(null);
-  const [billModal, setBillModal] = useState<{
-    booking: RepairBooking;
-    items: BillItem[];
   } | null>(null);
 
   const { data: res, isLoading } = useQuery({
@@ -70,68 +62,6 @@ const RepairBookingsPage: React.FC = () => {
       setStatusModal(null);
     },
   });
-
-  const billMutation = useMutation({
-    mutationFn: ({
-      id,
-      items,
-      finalize,
-    }: {
-      id: string;
-      items: BillItem[];
-      finalize?: boolean;
-    }) => repairBookingApi.updateBill(id, { items, finalize }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["repair-bookings"] });
-      setBillModal(null);
-    },
-  });
-
-  const openBillModal = (booking: RepairBooking) => {
-    setBillModal({
-      booking,
-      items: booking.bill?.items?.length ? booking.bill.items : [emptyBillItem()],
-    });
-  };
-
-  const updateBillItem = (
-    index: number,
-    field: keyof BillItem,
-    value: string,
-  ) => {
-    setBillModal((current) => {
-      if (!current) return null;
-      const items = current.items.map((item, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...item,
-              [field]: field === "amount" ? Number(value) || 0 : value,
-            }
-          : item,
-      );
-      return { ...current, items };
-    });
-  };
-
-  const removeBillItem = (index: number) => {
-    setBillModal((current) => {
-      if (!current) return null;
-      const items = current.items.filter((_, itemIndex) => itemIndex !== index);
-      return { ...current, items: items.length ? items : [emptyBillItem()] };
-    });
-  };
-
-  const cleanBillItems = (items: BillItem[]) =>
-    items
-      .map((item) => ({
-        description: item.description.trim(),
-        amount: item.amount,
-      }))
-      .filter((item) => item.description && item.amount >= 0);
-
-  const billTotal = billModal
-    ? cleanBillItems(billModal.items).reduce((sum, item) => sum + item.amount, 0)
-    : 0;
 
   const columns = [
     {
@@ -179,46 +109,28 @@ const RepairBookingsPage: React.FC = () => {
       render: (v: unknown) => statusBadge(v as string),
     },
     {
-      key: "bill",
-      label: "Bill",
-      render: (v: unknown) => {
-        const bill = v as RepairBooking["bill"];
-        return bill?.status === "FINALIZED"
-          ? formatCurrency(bill.total)
-          : "Draft";
-      },
-    },
-    {
       key: "_id",
       label: "Actions",
       render: (_: unknown, row: unknown) => {
         const booking = row as RepairBooking;
         return (
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                setStatusModal({
-                  booking,
-                  status:
-                    booking.status === "REQUESTED"
-                      ? "PROPOSED"
-                      : booking.status,
-                  scheduledDate: booking.scheduledDate || booking.requestedDate,
-                  estimatedDays: booking.estimatedDays || 1,
-                  notes: booking.adminNotes || "",
-                })
-              }
-              className="btn-secondary text-xs px-3 py-1"
-            >
-              Review
-            </button>
-            <button
-              onClick={() => openBillModal(booking)}
-              className="btn-primary text-xs px-3 py-1"
-            >
-              Bill
-            </button>
-          </div>
+          <button
+            onClick={() =>
+              setStatusModal({
+                booking,
+                status:
+                  booking.status === "REQUESTED"
+                    ? "PROPOSED"
+                    : booking.status,
+                scheduledDate: booking.scheduledDate || booking.requestedDate,
+                estimatedDays: booking.estimatedDays || 1,
+                notes: booking.adminNotes || "",
+              })
+            }
+            className="btn-secondary text-xs px-3 py-1"
+          >
+            Review
+          </button>
         );
       },
     },
@@ -412,124 +324,6 @@ const RepairBookingsPage: React.FC = () => {
                 className="btn-secondary flex-1"
               >
                 Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={!!billModal}
-        onClose={() => setBillModal(null)}
-        title="Repair Bill"
-        size="lg"
-      >
-        {billModal && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
-              <p>
-                <strong>Customer:</strong> {billModal.booking.customerName}
-              </p>
-              <p className="mt-1">
-                <strong>Vehicle:</strong>{" "}
-                {[billModal.booking.vehicleModel, billModal.booking.vehiclePlate]
-                  .filter(Boolean)
-                  .join(" ") || "-"}
-              </p>
-              <p className="mt-1">
-                <strong>Bill status:</strong>{" "}
-                {billModal.booking.bill?.status || "DRAFT"}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {billModal.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-[1fr_140px_auto] gap-2">
-                  <input
-                    value={item.description}
-                    onChange={(e) =>
-                      updateBillItem(index, "description", e.target.value)
-                    }
-                    className="input"
-                    placeholder="Service or part"
-                    disabled={billModal.booking.bill?.status === "FINALIZED"}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    value={item.amount}
-                    onChange={(e) =>
-                      updateBillItem(index, "amount", e.target.value)
-                    }
-                    className="input"
-                    placeholder="Amount"
-                    disabled={billModal.booking.bill?.status === "FINALIZED"}
-                  />
-                  <button
-                    onClick={() => removeBillItem(index)}
-                    className="btn-secondary px-3"
-                    disabled={billModal.booking.bill?.status === "FINALIZED"}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() =>
-                setBillModal((current) =>
-                  current
-                    ? { ...current, items: [...current.items, emptyBillItem()] }
-                    : null,
-                )
-              }
-              className="btn-secondary"
-              disabled={billModal.booking.bill?.status === "FINALIZED"}
-            >
-              Add Service
-            </button>
-
-            <div className="flex items-center justify-between border-t pt-4">
-              <span className="text-sm font-semibold text-gray-600">
-                Final total
-              </span>
-              <span className="text-xl font-bold text-gray-950">
-                {formatCurrency(billTotal)}
-              </span>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() =>
-                  billMutation.mutate({
-                    id: billModal.booking._id,
-                    items: cleanBillItems(billModal.items),
-                  })
-                }
-                disabled={
-                  billMutation.isPending ||
-                  billModal.booking.bill?.status === "FINALIZED"
-                }
-                className="btn-secondary flex-1"
-              >
-                Save Draft
-              </button>
-              <button
-                onClick={() =>
-                  billMutation.mutate({
-                    id: billModal.booking._id,
-                    items: cleanBillItems(billModal.items),
-                    finalize: true,
-                  })
-                }
-                disabled={
-                  billMutation.isPending ||
-                  billModal.booking.bill?.status === "FINALIZED"
-                }
-                className="btn-primary flex-1"
-              >
-                {billMutation.isPending ? "Saving..." : "Finalize Bill"}
               </button>
             </div>
           </div>

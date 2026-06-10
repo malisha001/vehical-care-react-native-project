@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  RefreshControl,
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,7 +20,12 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const CleaningListScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
-  const { data: services, isLoading } = useQuery({
+  const {
+    data: services,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["cleaning-services"],
     queryFn: () => cleaningApi.getAll().then((r) => r.data.data),
   });
@@ -93,6 +99,13 @@ const CleaningListScreen: React.FC = () => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor="#2563eb"
+            />
+          }
           ListEmptyComponent={
             <EmptyState
               icon="water-outline"

@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  RefreshControl,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -25,7 +26,12 @@ const ModificationListScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const { data: items, isLoading } = useQuery({
+  const {
+    data: items,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["mod-items", debouncedSearch, selectedCategory],
     queryFn: () =>
       modItemApi
@@ -181,6 +187,13 @@ const ModificationListScreen: React.FC = () => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor="#7c3aed"
+            />
+          }
           ListEmptyComponent={
             <EmptyState
               icon="build-outline"

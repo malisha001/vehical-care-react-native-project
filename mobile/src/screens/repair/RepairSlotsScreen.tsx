@@ -24,7 +24,12 @@ import { ScreenHero } from "../../components/ui/MobileUI";
 
 const schema = z.object({
   customerName: z.string().min(2, "Please enter your name"),
-  phone: z.string().min(7, "Please enter a valid phone number").max(20),
+  phone: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => /^\d{10}$/.test(value), {
+      message: "Please enter a valid 10-digit phone number",
+    }),
   requestedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter pickup date as YYYY-MM-DD"),
@@ -224,9 +229,12 @@ const RepairSlotsScreen: React.FC = () => {
                     placeholder="e.g. 0771234567"
                     placeholderTextColor="#9ca3af"
                     value={value}
-                    onChangeText={onChange}
+                    onChangeText={(text) =>
+                      onChange(text.replace(/\D/g, "").slice(0, 10))
+                    }
                     onBlur={onBlur}
                     keyboardType="phone-pad"
+                    maxLength={10}
                   />
                 )}
               />

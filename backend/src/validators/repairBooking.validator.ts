@@ -2,7 +2,12 @@ import { z } from "zod";
 
 export const createRepairBookingSchema = z.object({
   customerName: z.string().min(2, "Name is required").max(100),
-  phone: z.string().min(7, "Phone number is required").max(20),
+  phone: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => /^\d{10}$/.test(value), {
+      message: "Phone number must be a valid 10-digit number",
+    }),
   requestedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Pickup date must be YYYY-MM-DD"),
@@ -28,19 +33,6 @@ export const userRepairDecisionSchema = z.object({
   decision: z.enum(["ACCEPT", "CANCEL"]),
 });
 
-export const updateBookingBillSchema = z.object({
-  items: z
-    .array(
-      z.object({
-        description: z.string().min(2, "Item description is required").max(120),
-        amount: z.number().min(0, "Amount cannot be negative"),
-      }),
-    )
-    .max(30)
-    .default([]),
-  finalize: z.boolean().optional(),
-});
-
 export type CreateRepairBookingInput = z.infer<
   typeof createRepairBookingSchema
 >;
@@ -48,4 +40,3 @@ export type UpdateBookingStatusInput = z.infer<
   typeof updateBookingStatusSchema
 >;
 export type UserRepairDecisionInput = z.infer<typeof userRepairDecisionSchema>;
-export type UpdateBookingBillInput = z.infer<typeof updateBookingBillSchema>;

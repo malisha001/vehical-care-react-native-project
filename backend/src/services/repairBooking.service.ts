@@ -2,13 +2,9 @@ import RepairBooking from "../models/RepairBooking";
 import { AppError } from "../utils/AppError";
 import {
   CreateRepairBookingInput,
-  UpdateBookingBillInput,
   UpdateBookingStatusInput,
   UserRepairDecisionInput,
 } from "../validators/repairBooking.validator";
-
-const calculateTotal = (items: UpdateBookingBillInput["items"]) =>
-  items.reduce((sum, item) => sum + item.amount, 0);
 
 export const createBooking = async (
   userId: string,
@@ -80,33 +76,6 @@ export const updateBookingStatus = async (
     runValidators: true,
   }).populate("userId", "name email");
   if (!booking) throw new AppError("Booking not found", 404);
-  return booking;
-};
-
-export const updateBookingBill = async (
-  id: string,
-  data: UpdateBookingBillInput,
-) => {
-  const booking = await RepairBooking.findById(id).populate("userId", "name email");
-  if (!booking) throw new AppError("Booking not found", 404);
-
-  if (booking.bill?.status === "FINALIZED") {
-    throw new AppError("Finalized bills cannot be changed", 400);
-  }
-
-  const items = data.items.map((item) => ({
-    description: item.description,
-    amount: item.amount,
-  }));
-
-  booking.bill = {
-    items,
-    total: calculateTotal(items),
-    status: data.finalize ? "FINALIZED" : "DRAFT",
-    finalizedAt: data.finalize ? new Date() : undefined,
-  };
-
-  await booking.save();
   return booking;
 };
 
