@@ -5,7 +5,40 @@ import ModificationItem from "../models/ModificationItem";
 import RepairBooking from "../models/RepairBooking";
 import CarrierRequest from "../models/CarrierRequest";
 
-export const getDashboardMetrics = async () => {
+type DashboardRange = "today" | "all";
+
+const getTodayDateFilter = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { $gte: start, $lt: end };
+};
+
+const sumFinalizedRevenue = async (
+  model: typeof CleaningBooking | typeof RepairBooking,
+  dateFilter?: Record<string, Date>,
+) => {
+  const [result] = await model.aggregate([
+    {
+      $match: {
+        billStatus: "FINALIZED",
+        ...(dateFilter ? { billFinalizedAt: dateFilter } : {}),
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$billTotal" }, count: { $sum: 1 } } },
+  ]);
+
+  return {
+    total: result?.total ?? 0,
+    finalizedBills: result?.count ?? 0,
+  };
+};
+
+export const getDashboardMetrics = async (range: DashboardRange = "all") => {
+  const dateFilter = range === "today" ? getTodayDateFilter() : undefined;
+  const createdAtFilter = dateFilter ? { createdAt: dateFilter } : {};
+
   const [
     totalUsers,
     totalCleaningServices,
@@ -19,24 +52,30 @@ export const getDashboardMetrics = async () => {
     completedBookings,
     totalCarrierRequests,
     activeCarrierRequests,
+    cleaningRevenue,
+    repairRevenue,
   ] = await Promise.all([
-    User.countDocuments({ role: "USER" }),
-    CleaningService.countDocuments({ isActive: true }),
-    CleaningBooking.countDocuments(),
-    CleaningBooking.countDocuments({ status: "PENDING" }),
-    ModificationItem.countDocuments(),
-    ModificationItem.countDocuments({ isAvailable: true }),
-    RepairBooking.countDocuments(),
-    RepairBooking.countDocuments({ status: "REQUESTED" }),
-    RepairBooking.countDocuments({ status: "ACCEPTED" }),
-    RepairBooking.countDocuments({ status: "COMPLETED" }),
-    CarrierRequest.countDocuments(),
+    User.countDocuments({ role: "USER", ...createdAtFilter }),
+    CleaningService.countDocuments({ isActive: true, ...createdAtFilter }),
+    CleaningBooking.countDocuments(createdAtFilter),
+    CleaningBooking.countDocuments({ status: "PENDING", ...createdAtFilter }),
+    ModificationItem.countDocuments(createdAtFilter),
+    ModificationItem.countDocuments({ isAvailable: true, ...createdAtFilter }),
+    RepairBooking.countDocuments(createdAtFilter),
+    RepairBooking.countDocuments({ status: "REQUESTED", ...createdAtFilter }),
+    RepairBooking.countDocuments({ status: "ACCEPTED", ...createdAtFilter }),
+    RepairBooking.countDocuments({ status: "COMPLETED", ...createdAtFilter }),
+    CarrierRequest.countDocuments(createdAtFilter),
     CarrierRequest.countDocuments({
       status: { $in: ["REQUESTED", "ASSIGNED"] },
+      ...createdAtFilter,
     }),
+    sumFinalizedRevenue(CleaningBooking, dateFilter),
+    sumFinalizedRevenue(RepairBooking, dateFilter),
   ]);
 
   return {
+    range,
     users: { total: totalUsers },
     cleaning: {
       active: totalCleaningServices,
@@ -51,5 +90,12 @@ export const getDashboardMetrics = async () => {
       completed: completedBookings,
     },
     carrier: { total: totalCarrierRequests, active: activeCarrierRequests },
+    revenue: {
+      total: cleaningRevenue.total + repairRevenue.total,
+      vehicleService: cleaningRevenue.total,
+      repair: repairRevenue.total,
+      finalizedBills:
+        cleaningRevenue.finalizedBills + repairRevenue.finalizedBills,
+    },
   };
 };

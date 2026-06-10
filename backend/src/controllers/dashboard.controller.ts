@@ -4,12 +4,13 @@ import { sendSuccess } from "../utils/apiResponse";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export const getMetrics = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const metrics = await getDashboardMetrics();
+    const range = req.query.range === "today" ? "today" : "all";
+    const metrics = await getDashboardMetrics(range);
     sendSuccess(res, "Dashboard metrics fetched", metrics);
   } catch (err) {
     next(err);

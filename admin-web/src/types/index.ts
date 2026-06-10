@@ -146,6 +146,7 @@ export interface CarrierRequest {
 }
 
 export interface DashboardMetrics {
+  range?: "today" | "all";
   users: { total: number };
   cleaning: { active: number; bookings: number; pending: number };
   modification: { total: number; available: number };
@@ -156,6 +157,12 @@ export interface DashboardMetrics {
     completed: number;
   };
   carrier: { total: number; active: number };
+  revenue: {
+    total: number;
+    vehicleService: number;
+    repair: number;
+    finalizedBills: number;
+  };
 }
 
 export interface UserDetails {

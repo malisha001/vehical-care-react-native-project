@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/endpoints";
 import { DashboardMetrics } from "../types";
@@ -14,7 +14,7 @@ import {
 
 const MetricCard: React.FC<{
   label: string;
-  value: number;
+  value: number | string;
   icon: string;
   color: string;
 }> = ({ label, value, icon, color }) => (
@@ -30,9 +30,11 @@ const MetricCard: React.FC<{
 );
 
 const DashboardPage: React.FC = () => {
+  const [range, setRange] = useState<"today" | "all">("today");
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-metrics"],
-    queryFn: () => dashboardApi.getMetrics().then((r) => r.data.data),
+    queryKey: ["dashboard-metrics", range],
+    queryFn: () => dashboardApi.getMetrics({ range }).then((r) => r.data.data),
     refetchInterval: 30000,
   });
 
@@ -42,7 +44,14 @@ const DashboardPage: React.FC = () => {
     modification: { total: 0, available: 0 },
     repairs: { total: 0, pending: 0, confirmed: 0, completed: 0 },
     carrier: { total: 0, active: 0 },
+    revenue: { total: 0, vehicleService: 0, repair: 0, finalizedBills: 0 },
   };
+
+  const formatMoney = (value: number) =>
+    `LKR ${value.toLocaleString("en-LK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const repairChartData = [
     { name: "Pending", value: m.repairs.pending, fill: "#f59e0b" },
@@ -60,10 +69,63 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500">
+            {range === "today" ? "Today's details" : "All time details"}
+          </p>
+        </div>
+        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+          <button
+            onClick={() => setRange("today")}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              range === "today"
+                ? "bg-primary-600 text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setRange("all")}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              range === "all"
+                ? "bg-primary-600 text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            All Time
+          </button>
+        </div>
+      </div>
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <MetricCard
+          label="Total Revenue"
+          value={formatMoney(m.revenue.total)}
+          icon="TR"
+          color="border-emerald-500"
+        />
+        <MetricCard
+          label="Vehicle Service Revenue"
+          value={formatMoney(m.revenue.vehicleService)}
+          icon="VS"
+          color="border-cyan-500"
+        />
+        <MetricCard
+          label="Repair Revenue"
+          value={formatMoney(m.revenue.repair)}
+          icon="RR"
+          color="border-amber-500"
+        />
+        <MetricCard
+          label="Finalized Bills"
+          value={m.revenue.finalizedBills}
+          icon="FB"
+          color="border-green-500"
+        />
         <MetricCard
           label="Total Users"
           value={m.users.total}

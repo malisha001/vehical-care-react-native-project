@@ -23,8 +23,8 @@ export const authApi = {
 
 // Dashboard
 export const dashboardApi = {
-  getMetrics: () =>
-    api.get<ApiResponse<DashboardMetrics>>("/dashboard/metrics"),
+  getMetrics: (params?: { range?: "today" | "all" }) =>
+    api.get<ApiResponse<DashboardMetrics>>("/dashboard/metrics", { params }),
 };
 
 export const userApi = {
