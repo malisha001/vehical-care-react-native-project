@@ -4,8 +4,36 @@ import CleaningBooking from "../models/CleaningBooking";
 import RepairBooking from "../models/RepairBooking";
 import CarrierRequest from "../models/CarrierRequest";
 import { AppError } from "../utils/AppError";
+import { CreateAdminInput } from "../validators/user.validator";
 
 const publicUserFields = "name email role isActive createdAt updatedAt";
+
+export const createAdmin = async (data: CreateAdminInput) => {
+  const existing = await User.findOne({
+    email: data.email.toLowerCase().trim(),
+  });
+  if (existing) {
+    throw new AppError("Email already registered", 409);
+  }
+
+  const user = await User.create({
+    name: data.name,
+    email: data.email,
+    password: data.password,
+    role: "ADMIN",
+    isActive: true,
+  });
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+};
 
 export const getAllUsers = async (
   page = 1,

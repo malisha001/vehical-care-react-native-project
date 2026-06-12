@@ -24,6 +24,19 @@ export const getAllUsers = async (
   }
 };
 
+export const createAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const admin = await userService.createAdmin(req.body);
+    sendSuccess(res, "Admin user created", admin, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getUserById = async (
   req: AuthRequest,
   res: Response,
